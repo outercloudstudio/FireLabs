@@ -1,0 +1,55 @@
+func start => {
+    checkBlock()
+
+    $dirleft = true
+    $handright = true
+}
+
+func infront => {
+    $bfront = true
+}
+
+func inright => {
+    $bright = true
+}
+
+func inleft => {
+    $bleft = true
+}
+
+func inback => {
+    $bback = true
+}
+
+func checkBlock => {
+    if($dirleft) => {
+        if($handright) => {
+            if(!$bback) => {
+                $dirleft = false
+                $dirback = true
+            }
+        }
+    }
+
+    if($dirleft) => {
+        rc("tp ~-0.1 ~ ~")
+    }
+
+    if($dirback) => {
+        rc("tp ~ ~ ~-0.1")
+    }
+
+    $bfront = false
+    $bright = false
+    $bleft = false
+    $bback = false
+
+    rc("execute @s ~ ~ ~ detect ~ ~ ~0.5 cobblestone 0 event entity @s frw:infront")
+    rc("execute @s ~ ~ ~ detect ~ ~ ~-0.5 cobblestone 0 event entity @s frw:inback")
+    rc("execute @s ~ ~ ~ detect ~0.5 ~ ~ cobblestone 0 event entity @s frw:inright")
+    rc("execute @s ~ ~ ~ detect ~-0.5 ~ ~ cobblestone 0 event entity @s frw:inleft")
+
+    delay(3) => {
+        checkBlock()
+    }
+}

@@ -1,0 +1,52 @@
+{
+	"format_version": 2,
+	"metadata": {
+		"authors": [
+			"Outer Cloud Studio"
+		],
+		"generated_with": {
+			"bridge": [
+				"2.2.4"
+			],
+			"dash": [
+				"0.7.1"
+			]
+		}
+	},
+	"header": {
+		"name": "pack.name",
+		"description": "pack.description",
+		"min_engine_version": [
+			1,
+			18,
+			0
+		],
+		"uuid": "e30ddbf9-83da-4451-88de-a7538bee3f6b",
+		"version": [
+			1,
+			0,
+			0
+		]
+	},
+	"modules": [
+		{
+			"type": "data",
+			"uuid": "0733f492-a8af-4cd9-b67b-9bf25a82a5a1",
+			"version": [
+				1,
+				0,
+				0
+			]
+		}
+	],
+	"dependencies": [
+		{
+			"uuid": "a3f7a8bd-c11b-4b1f-a6c7-58d476c51dce",
+			"version": [
+				1,
+				0,
+				0
+			]
+		}
+	]
+}

@@ -1,0 +1,41 @@
+{
+	"type": "minecraftBedrock",
+	"name": "FireLabs",
+	"namespace": "fl",
+	"authors": [
+		"Outer Cloud Studio"
+	],
+	"targetVersion": "1.18.20",
+	"description": "",
+	"experimentalGameplay": {
+		"holidayCreatorFeatures": true,
+		"creationOfCustomBiomes": false,
+		"additionalModdingCapabilities": false,
+		"upcomingCreatorFeatures": true,
+		"enableGameTestFramework": false,
+		"experimentalMolangFeatures": true,
+		"theWildUpdate": true,
+		"educationEdition": false
+	},
+	"packs": {
+		"behaviorPack": "./BP",
+		"resourcePack": "./RP"
+	},
+	"compiler": {
+		"plugins": [
+			"typeScript",
+			"entityIdentifierAlias",
+			"customEntityComponents",
+			"customItemComponents",
+			"customBlockComponents",
+			"customCommands",
+			"moLang",
+			[
+				"simpleRewrite",
+				{
+					"packName": "FireLabs"
+				}
+			]
+		]
+	}
+}

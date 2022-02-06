@@ -1,0 +1,4 @@
+pack.name=FireLabs RP
+pack.description=
+item.spawn_egg.entity.fl:maze_solver.name=Spawn Maze Solver
+entity.fl:maze_solver.name=Maze Solver
