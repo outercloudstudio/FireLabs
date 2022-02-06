@@ -2,3 +2,5 @@ pack.name=FireLabs RP
 pack.description=
 item.spawn_egg.entity.fl:maze_solver.name=Spawn Maze Solver
 entity.fl:maze_solver.name=Maze Solver
+item.spawn_egg.entity.fl:tickt.name=Spawn Tickt
+entity.fl:tickt.name=Tickt
