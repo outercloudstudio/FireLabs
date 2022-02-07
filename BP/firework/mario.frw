@@ -1,9 +1,13 @@
 func fall => {
-    if($inair) => {
-        rc("tp ~ ~-0.5 ~")
+    if($inair && !$jumping) => {
+        rc("tp ~ ~-0.1 ~")
     }
 
-    delay(5) => {
+    if($jumping) => {
+        rc("tp ~ ~0.2 ~")
+    }
+
+    delay(1) => {
         fall()
     }
 }
@@ -12,7 +16,41 @@ func inAir => {
     $inair = true
 }
 
-func update => {
+func notInAir => {
     $inair = false
-    rc("execute @s ~ ~ ~ detect ~ ~-1 ~ air 0 event enity @s frw:inAir")
+}
+
+func inFront => {
+    $infront = true
+}
+
+func notInFront => {
+    $infront = false
+}
+
+func update => {
+    rc("execute @s ~ ~ ~ detect ~ ~-0.2 ~ air 0 event entity @s frw:inAir")
+    rc("execute @s ~ ~ ~ detect ~ ~-0.2 ~ cobblestone 0 event entity @s frw:notInAir")
+    rc("execute @s ~ ~ ~ detect ~ ~ ~0.5 air 0 event entity @s frw:notInFront")
+    rc("execute @s ~ ~ ~ detect ~ ~ ~0.5 cobblestone 0 event entity @s frw:inFront")
+}
+
+func jump => {
+    if(!$inair && !$jumping) => {
+        $jumping = true
+
+        delay(8) => {
+            $jumping = false
+        }
+    }
+}
+
+func move => {
+    if(!$infront) => {
+        rc("tp ~ ~ ~0.5")
+    }
+}
+
+func start =>{
+    fall()
 }

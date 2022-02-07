@@ -1,0 +1,28 @@
+{
+	"format_version": "1.16.100",
+	"minecraft:item": {
+		"description": {
+			"identifier": "fl:up",
+			"category": "nature"
+		},
+		"components": {
+			"minecraft:icon": {
+				"texture": "fl_up"
+			},
+			"minecraft:on_use": {
+				"on_use": {
+					"event": "fl:use"
+				}
+			}
+		},
+		"events": {
+			"fl:use": {
+				"run_command": {
+					"command": [
+						"/event entity @e frw:jump"
+					]
+				}
+			}
+		}
+	}
+}

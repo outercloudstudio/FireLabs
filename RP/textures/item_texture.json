@@ -1,5 +1,12 @@
 {
 	"resource_pack_name": "FireLabs",
 	"texture_name": "atlas.items",
-	"texture_data": {}
+	"texture_data": {
+		"fl_up": {
+			"textures": "textures/items/Up"
+		},
+		"fl_right": {
+			"textures": "textures/items/Right"
+		}
+	}
 }
