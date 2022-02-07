@@ -1,0 +1,18 @@
+func fall => {
+    if($inair) => {
+        rc("tp ~ ~-0.5 ~")
+    }
+
+    delay(5) => {
+        fall()
+    }
+}
+
+func inAir => {
+    $inair = true
+}
+
+func update => {
+    $inair = false
+    rc("execute @s ~ ~ ~ detect ~ ~-1 ~ air 0 event enity @s frw:inAir")
+}
