@@ -8,7 +8,12 @@
 			"is_experimental": false
 		},
 		"component_groups": {},
-		"components": {},
+		"components": {
+			"minecraft:breathable": {
+				"breathes_air": true,
+				"breathes_solids": true
+			}
+		},
 		"events": {}
 	}
 }
