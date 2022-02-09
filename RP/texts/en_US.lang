@@ -10,3 +10,5 @@ item.spawn_egg.entity.fl:mario.name=Spawn Mario
 entity.fl:mario.name=Mario
 item.fl:up=Up
 item.fl:right=Right
+tile.fl:ground.name=Ground
+tile.fl:question.name=Question

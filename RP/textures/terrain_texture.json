@@ -3,5 +3,12 @@
 	"padding": 8,
 	"resource_pack_name": "FireLabs",
 	"texture_name": "atlas.terrain",
-	"texture_data": {}
+	"texture_data": {
+		"fl_ground": {
+			"textures": "textures/blocks/Ground"
+		},
+		"fl_question": {
+			"textures": "textures/blocks/Question"
+		}
+	}
 }
