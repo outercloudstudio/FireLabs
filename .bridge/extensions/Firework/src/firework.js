@@ -107,29 +107,46 @@ module.exports = ({ fileType, fileSystem, projectRoot, outputFileSystem, options
 		},
 
 		async buildEnd() {
-			if(options.mode == 'development'){
-				let outBPPath = 'development_behavior_packs/' + projectRoot.split('/')[1] + ' BP/'
+			let outBPPath = 'development_behavior_packs/' + projectRoot.split('/')[1] + ' BP/'
 
-				outputFileSystem.mkdir(outBPPath + 'animations')
-
-				console.log(outAnimations)
-
-				let animations = Object.getOwnPropertyNames(outAnimations)
-
-				console.log(animations)
-
-				for(let i = 0; i < animations.length; i++){
-					outputFileSystem.writeFile(outBPPath + 'animations/' + animations[i], outAnimations[animations[i]])
-				}
-
-				outputFileSystem.mkdir(outBPPath + 'functions')
-
-				outputFileSystem.writeFile(outBPPath + 'functions/firework_runtime.mcfunction', outAnimations[animations[i]])
-
-				console.log(1)
-			}else{
+			if(options.mode != 'development'){
 				console.log(2)
-				console.log(options.mode)
+
+				outBPPath = projectRoot + '/builds/dist/' + projectRoot.split('/')[1] + ' BP/'
+			}
+
+			console.log(outBPPath)
+
+			await outputFileSystem.mkdir(outBPPath + 'animations')
+
+			console.log(outAnimations)
+
+			let animations = Object.getOwnPropertyNames(outAnimations)
+
+			console.log(animations)
+
+			for(let i = 0; i < animations.length; i++){
+				await outputFileSystem.writeFile(outBPPath + 'animations/' + animations[i], outAnimations[animations[i]])
+			}
+
+			await outputFileSystem.mkdir(outBPPath + 'functions')
+
+			let mc = 'event entity @e[tag=started2, tag=!started3] frw:start\ntag @e[tag=started2] add started3\ntag @e[tag=started] add started2\ntag @e add started'
+
+			console.log(mc)
+
+			await outputFileSystem.writeFile(outBPPath + 'functions/firework_runtime.mcfunction', mc)
+
+			try{
+				let tick = await outputFileSystem.readJSON(outBPPath + 'functions/tick.json')
+
+				tick.values.push('firework_runtime')
+
+				await outputFileSystem.writeJSON(outBPPath + 'functions/tick.json', JSON.stringify(tick))
+			}catch (ex){
+				await outputFileSystem.writeFile(outBPPath + 'functions/tick.json', JSON.stringify({
+					values: ['firework_runtime']
+				}))
 			}
 
             scripts = {}
