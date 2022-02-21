@@ -21,55 +21,31 @@ module.exports = ({ fileType, fileSystem, projectRoot }) => {
 				console.log(f)
 
 				for(file of f){
-					scripts[file] = await fileSystem.readFile(file)
+					if(file.endsWith('.frw')){
+						const filePathArray = file.split('/')
+
+						const fileName = filePathArray[filePathArray.length - 1].substring(0, filePathArray[filePathArray.length - 1].length - 4)
+
+						if(scripts[fileName]){
+							console.log('WARNING: ' + fileName + ' already exists in scripts!')
+							continue
+						}
+
+						const fO = await fileSystem.readFile(file)
+						scripts[fileName] = await fO.text()
+
+						console.log('INDEXED: ' + fileName)
+					}
 				}
+
+				console.log(scripts)
             } catch (ex) {}
         },
 
-		registerAliases(filePath, fileContent) {
-            /*let type = fileType?.getId(filePath)
-
-			console.log(`Registering aliases for ${filePath}`)
-			console.log(fileType?.getId(filePath))
-
-            if (noErrors(fileContent) && isEntity(filePath) && getIdentifier(fileContent)){
-				console.log('REGISTERED ' + `${getIdentifier(fileContent)}_${type}` + ' for ' + filePath)
-
-				return [
-					`${getIdentifier(filePath, fileContent)}_${type}`
-				]
-			}*/
-		},
-
-		require(filePath, fileContent){
-			console.log('REQUIRE: ' + filePath)
-
+		async transform(filePath, fileContent) {
 			if(noErrors(fileContent) && isEntity(filePath)){
-				if(fileContent['minecraft:entity'] && fileContent['minecraft:entity'].components){
-					const components = Object.getOwnPropertyNames(fileContent['minecraft:entity'].components)
+				console.log('TRANSFORM: ' + filePath)
 
-					let requiredScripts = []
-
-					components.forEach(component => {
-						if(component.startsWith('frw:')){
-							requiredScripts.push(projectRoot + '/firework/' + component.substring(4) + '.frw')
-						}
-					})
-
-					if(requiredScripts.length > 0){
-						console.log('REQUIRED SCRIPTS: ')
-						console.log(requiredScripts)
-
-						return requiredScripts
-					}
-				}
-			}
-		},
-
-		transform(filePath, fileContent) {
-			console.log('TRANSFORM: ' + filePath)
-
-			if(noErrors(fileContent) && isEntity(filePath)){
 				if(fileContent['minecraft:entity'] && fileContent['minecraft:entity'].components){
 					const components = Object.getOwnPropertyNames(fileContent['minecraft:entity'].components)
 
@@ -82,72 +58,18 @@ module.exports = ({ fileType, fileSystem, projectRoot }) => {
 					})
 
 					if(requiredScripts.length > 0){
-						async function compileScripts() {
-							console.log('ASYNC')
+						for(script of requiredScripts){
+							let scriptContent = scripts[script.substring(0, script.length - 4)]
 
-							for(script of requiredScripts){
-								console.log('Attempting to read ' + projectRoot + '/firework/' + script)
-
-								let ex = await fileSystem.directoryExists(projectRoot + '/firework/')
-
-								console.log(ex)
-
-								const scriptContent = await fileSystem.readFile(projectRoot + '/firework/' + script)
-
-								console.log(scriptContent)
-							}
+							
 						}
-
-						compileScripts()
-
-						console.log('________________________________')
 					}
 				}
 			}
 		},
 
-		finalizeBuild(filePath, fileContent) {
-			/*if(noErrors(fileContent) && isEntity(filePath)){
-				if(fileContent['minecraft:entity'] && fileContent['minecraft:entity'].components){
-					const components = Object.getOwnPropertyNames(fileContent['minecraft:entity'].components)
-
-					let requiredScripts = []
-
-					components.forEach(component => {
-						if(component.startsWith('frw:')){
-							console.log('FOUND Script', component)
-							requiredScripts.push(component.substring(4) + '.frw')
-						}
-					})
-
-					if(requiredScripts.length > 0){
-						let fireworkDirArray = filePath.split('/')
-
-						let fireworkDir = fireworkDirArray.slice(2, 3).join('/') + '/firework/'
-
-						console.log(fireworkDirArray)
-						console.log(fireworkDir)
-
-						async function compileScripts() {
-							console.log('ASYNC')
-
-							for(script of requiredScripts){
-								console.log('Attempting to read ' + fireworkDir + script)
-
-								const scriptContent = await fileSystem.readFile(fireworkDir + script)
-
-								console.log(scriptContent)
-							}
-						}
-
-						compileScripts()
-
-						console.log('________________________________')
-
-						return fileContent
-					}
-				}
-			}*/
-		}
+		buildEnd() {
+            scripts = {}
+        },
 	}
 }
