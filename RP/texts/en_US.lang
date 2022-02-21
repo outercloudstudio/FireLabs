@@ -12,3 +12,4 @@ item.fl:up=Up
 item.fl:right=Right
 tile.fl:ground.name=Ground
 tile.fl:question.name=Question
+item.fl:item_tag_test=Item Tag Test

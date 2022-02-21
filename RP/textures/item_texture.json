@@ -7,6 +7,9 @@
 		},
 		"fl_right": {
 			"textures": "textures/items/Right"
+		},
+		"fl_item_tag_test": {
+			"textures": "textures/items/item_tag_test"
 		}
 	}
 }

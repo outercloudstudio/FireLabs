@@ -12,7 +12,8 @@
 			"minecraft:breathable": {
 				"breathes_air": true,
 				"breathes_solids": true
-			}
+			},
+			"frw:mario": {}
 		},
 		"events": {}
 	}
