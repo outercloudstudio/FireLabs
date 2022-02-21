@@ -1751,6 +1751,10 @@
 
     					if(requiredScripts.length > 0){
     						for(script of requiredScripts){
+    							delete fileContent['minecraft:entity'].components['frw:' + script . substring(0, script.length - 4)];
+    						}
+
+    						for(script of requiredScripts){
     							console.log('Compiling Script: ' + script);
 
     							let scriptContent = scripts[script.substring(0, script.length - 4)];
