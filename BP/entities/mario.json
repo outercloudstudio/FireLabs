@@ -1,4 +1,5 @@
 {
+	"include": "fl:tickt",
 	"format_version": "1.16.0",
 	"minecraft:entity": {
 		"description": {

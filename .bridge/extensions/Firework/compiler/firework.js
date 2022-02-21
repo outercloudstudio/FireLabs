@@ -1,4 +1,6 @@
-module.exports = ({ fileType, fileSystem }) => {
+module.exports = ({ fileType, fileSystem, projectRoot }) => {
+	let scripts = {}
+	
 	function noErrors(fileContent)
     {
         return !fileContent?.__error__;
@@ -11,25 +13,46 @@ module.exports = ({ fileType, fileSystem }) => {
 	}
 
 	return {
-		//include() {
-		//	return ['BP/firework/']
-		//},
+		async buildStart() {
+            try {
+                const f = await fileSystem.allFiles(projectRoot + '/BP/firework')
+
+				console.log('INDXING: ')
+				console.log(f)
+
+				for(file of f){
+					scripts[file] = await fileSystem.readFile(file)
+				}
+            } catch (ex) {}
+        },
+
+		registerAliases(filePath, fileContent) {
+            /*let type = fileType?.getId(filePath)
+
+			console.log(`Registering aliases for ${filePath}`)
+			console.log(fileType?.getId(filePath))
+
+            if (noErrors(fileContent) && isEntity(filePath) && getIdentifier(fileContent)){
+				console.log('REGISTERED ' + `${getIdentifier(fileContent)}_${type}` + ' for ' + filePath)
+
+				return [
+					`${getIdentifier(filePath, fileContent)}_${type}`
+				]
+			}*/
+		},
 
 		require(filePath, fileContent){
-			console.log(filePath)
+			console.log('REQUIRE: ' + filePath)
+
 			if(noErrors(fileContent) && isEntity(filePath)){
 				if(fileContent['minecraft:entity'] && fileContent['minecraft:entity'].components){
 					const components = Object.getOwnPropertyNames(fileContent['minecraft:entity'].components)
-
-					let fireworkDirArray = filePath.split('/')
-
-					let fireworkDir = fireworkDirArray.slice(0, 3).join('/') + '/firework/'
 
 					let requiredScripts = []
 
 					components.forEach(component => {
 						if(component.startsWith('frw:')){
-							requiredScripts.push(fireworkDir + component.substring(4) + '.frw')
+							requiredScripts.push(projectRoot + '/firework/' + component.substring(4) + '.frw')
 						}
 					})
 
@@ -44,9 +67,47 @@ module.exports = ({ fileType, fileSystem }) => {
 		},
 
 		transform(filePath, fileContent) {
-			if(noErrors(fileContent) && isEntity(filePath)){
-				console.log(filePath)
+			console.log('TRANSFORM: ' + filePath)
 
+			if(noErrors(fileContent) && isEntity(filePath)){
+				if(fileContent['minecraft:entity'] && fileContent['minecraft:entity'].components){
+					const components = Object.getOwnPropertyNames(fileContent['minecraft:entity'].components)
+
+					let requiredScripts = []
+
+					components.forEach(component => {
+						if(component.startsWith('frw:')){
+							requiredScripts.push(component.substring(4) + '.frw')
+						}
+					})
+
+					if(requiredScripts.length > 0){
+						async function compileScripts() {
+							console.log('ASYNC')
+
+							for(script of requiredScripts){
+								console.log('Attempting to read ' + projectRoot + '/firework/' + script)
+
+								let ex = await fileSystem.directoryExists(projectRoot + '/firework/')
+
+								console.log(ex)
+
+								const scriptContent = await fileSystem.readFile(projectRoot + '/firework/' + script)
+
+								console.log(scriptContent)
+							}
+						}
+
+						compileScripts()
+
+						console.log('________________________________')
+					}
+				}
+			}
+		},
+
+		finalizeBuild(filePath, fileContent) {
+			/*if(noErrors(fileContent) && isEntity(filePath)){
 				if(fileContent['minecraft:entity'] && fileContent['minecraft:entity'].components){
 					const components = Object.getOwnPropertyNames(fileContent['minecraft:entity'].components)
 
@@ -79,18 +140,14 @@ module.exports = ({ fileType, fileSystem }) => {
 							}
 						}
 
-						//compileScripts()
+						compileScripts()
 
 						console.log('________________________________')
 
 						return fileContent
 					}
 				}
-			}
-		},
-
-		finalizeBuild(filePath, fileContent) {
-			console.log(filePath)
+			}*/
 		}
 	}
 }
