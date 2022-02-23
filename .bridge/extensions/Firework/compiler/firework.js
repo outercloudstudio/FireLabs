@@ -1693,6 +1693,8 @@
         return tokens
     }
 
+    //rollup src/firework.js --file compiler/firework.js --format iife
+
     module.exports = ({ fileType, fileSystem, projectRoot, outputFileSystem, options, compileFiles }) => {
     	let scripts = {};
 
@@ -1716,7 +1718,7 @@
                 try {
                     const f = await fileSystem.allFiles(projectRoot + '/BP/firework');
 
-    				for(file of f){
+    				for(const file of f){
     					if(file.endsWith('.frw')){
     						const filePathArray = file.split('/');
 
@@ -1730,6 +1732,8 @@
     						const fO = await fileSystem.readFile(file);
     						scripts[fileName] = await fO.text();
     						scriptPaths[fileName] = file;
+
+    						console.log('Indexed ' + fileName + ' to ' + file);
     					}
     				}
                 } catch (ex) {}
@@ -1750,12 +1754,12 @@
     					});
 
     					if(requiredScripts.length > 0){
-    						for(script of requiredScripts){
-    							delete fileContent['minecraft:entity'].components['frw:' + script . substring(0, script.length - 4)];
+    						for(const script of requiredScripts){
+    							delete fileContent['minecraft:entity'].components['frw:' + script.substring(0, script.length - 4)];
     						}
 
-    						for(script of requiredScripts){
-    							if(scriptPaths[script]){
+    						for(const script of requiredScripts){
+    							if(scriptPaths[script.substring(0, script.length - 4)]){
     								let scriptContent = scripts[script.substring(0, script.length - 4)];
 
     								const tokens = Tokenize(scriptContent);
@@ -1767,7 +1771,7 @@
     								}
 
     								const compiled = Compile(tree, {
-    									delayChannels: 3
+    									delayChannels: 3  
     								}, fileContent);
 
     								if(compiled instanceof Error){
@@ -1814,12 +1818,17 @@
     			await outputFileSystem.writeFile(outBPPath + 'functions/firework_runtime.mcfunction', mc);
 
     			try{
-    				let tick = await outputFileSystem.readJSON(outBPPath + 'functions/tick.json');
+    				let tick = await outputFileSystem.readFile(outBPPath + 'functions/tick.json');
+
+    				tick = JSON.parse(await tick.text());
 
     				tick.values.push('firework_runtime');
 
-    				await outputFileSystem.writeJSON(outBPPath + 'functions/tick.json', JSON.stringify(tick));
+    				await outputFileSystem.writeFile(outBPPath + 'functions/tick.json', JSON.stringify(tick));
     			}catch (ex){
+    				console.log("can't find tick");
+    				console.log(ex);
+
     				await outputFileSystem.writeFile(outBPPath + 'functions/tick.json', JSON.stringify({
     					values: ['firework_runtime']
     				}));
