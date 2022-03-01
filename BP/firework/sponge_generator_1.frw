@@ -1,10 +1,10 @@
 func place => {
-    if(rand(2)) => {
-        rc("tp ~ ~0.5 ~")
+    if(rand() || rand() || rand()) => {
+        move("~ ~0.5 ~")
         rc("execute @e[tag=sg, x=~, y=~-0.5, z=~, dx=0, dy=0, dz=0] ~ ~ ~ kill @e[tag=sg, x=~, y=~0.5, z=~, dx=0, dy=0, dz=0]")
 
         delay(10) => {
-            rc("tp ~ ~-0.5 ~")
+            move("~ ~-0.5 ~")
 
             rc("summon fl:sponge_generator_0 ~1 ~ ~")
             rc("summon fl:sponge_generator_0 ~-1 ~ ~")

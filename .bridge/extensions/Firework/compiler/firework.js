@@ -24,6 +24,29 @@
     }
 
     const functions = {
+        rc: {
+            params: [
+                'STRING'
+            ],
+
+            asEntity (params) {
+                return {
+                    animations: {},
+                    sequence: [
+                        {
+                            runCommand: {
+                                command:[
+                                    params[0].value
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+
+            supports: 'entity'
+        },
+
         move: {
             params: [
                 'STRING'
@@ -36,7 +59,51 @@
                         {
                             runCommand: {
                                 command:[
-                                    param[1].value
+                                    'tp ' + params[0].value
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+
+            supports: 'entity'
+        },
+
+        die: {
+            params: [],
+
+            asEntity (params) {
+                return {
+                    animations: {},
+                    sequence: [
+                        {
+                            runCommand: {
+                                command:[
+                                    'kill @s'
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+
+            supports: 'entity'
+        },
+
+        say: {
+            params: [
+                'STRING'
+            ],
+
+            asEntity (params) {
+                return {
+                    animations: {},
+                    sequence: [
+                        {
+                            runCommand: {
+                                command:[
+                                    'say ' + params[0].value
                                 ]
                             }
                         }
@@ -106,7 +173,7 @@
 
             return match
         }else {
-            return doesTemplateMatch(functions[name].params, template)
+            return doesTemplateMatch(template, functions[name].params)
         }
     }
 
@@ -178,7 +245,7 @@
                 }
             }
         }else {
-            if(doesTemplateMatch(params, functions[name].variations[i].params)){
+            if(doesTemplateMatch(params, functions[name].params)){
                 if(doesFunctionSupportMolang(name)){
                     return functions[name].asMolang(params)
                 }
@@ -769,26 +836,29 @@
 
             for(let l = 0; l < blocks[blockNames[i]].length; l++){
                 if(blocks[blockNames[i]][l].token == 'CALL'){
-                    if(blocks[blockNames[i]][l].value[0].value == 'rc'){
+                    const callName = blocks[blockNames[i]][l].value[0].value;
+                    const callParams = blocks[blockNames[i]][l].value.slice(1);
+
+                    if(doesFunctionExist(callName)){
+                        if(!doesFunctionSupportEntity(callName)){
+                            return new Error(`Method '${callName}' is not supported in code blocks!`)
+                        }
+            
+                        if(!doesFunctionExistWithTemplate(callName, callParams)){
+                            return new Error(`Method '${callName}' does not match any template!`)
+                        }
+
+                        data.sequence.push(getFunction(callName, callParams));
+                    }else if(blocks[callName]){
                         data.sequence.push({
                             run_command: {
                                 command: [
-                                    blocks[blockNames[i]][l].value[1].value
+                                    `event entity @s frw:${callName}`
                                 ]
                             }
                         });
                     }else {
-                        if(blocks[blocks[blockNames[i]][l].value[0].value]){
-                            data.sequence.push({
-                                run_command: {
-                                    command: [
-                                        `event entity @s frw:${blocks[blockNames[i]][l].value[0].value}`
-                                    ]
-                                }
-                            });
-                        }else {
-                            return new Error(`Attemped to call undefined method ${blocks[blockNames[i]][l].value[0].value}!`)
-                        }
+                        return new Error(`Method '${callName}' does not exist!`)
                     }
                 }else if(blocks[blockNames[i]][l].token == 'DEFINITION' || blocks[blockNames[i]][l].token == 'IF' || blocks[blockNames[i]][l].token == 'DELAY'){
                     if(blocks[blockNames[i]][l].value[1].value[1] == 'normal'){

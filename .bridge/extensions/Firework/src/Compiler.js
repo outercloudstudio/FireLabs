@@ -580,26 +580,29 @@ export function Compile(tree, config, source){
 
         for(let l = 0; l < blocks[blockNames[i]].length; l++){
             if(blocks[blockNames[i]][l].token == 'CALL'){
-                if(blocks[blockNames[i]][l].value[0].value == 'rc'){
+                const callName = blocks[blockNames[i]][l].value[0].value
+                const callParams = blocks[blockNames[i]][l].value.slice(1)
+
+                if(Native.doesFunctionExist(callName)){
+                    if(!Native.doesFunctionSupportEntity(callName)){
+                        return new Backend.Error(`Method '${callName}' is not supported in code blocks!`)
+                    }
+        
+                    if(!Native.doesFunctionExistWithTemplate(callName, callParams)){
+                        return new Backend.Error(`Method '${callName}' does not match any template!`)
+                    }
+
+                    data.sequence.push(Native.getFunction(callName, callParams))
+                }else if(blocks[callName]){
                     data.sequence.push({
                         run_command: {
                             command: [
-                                blocks[blockNames[i]][l].value[1].value
+                                `event entity @s frw:${callName}`
                             ]
                         }
                     })
                 }else{
-                    if(blocks[blocks[blockNames[i]][l].value[0].value]){
-                        data.sequence.push({
-                            run_command: {
-                                command: [
-                                    `event entity @s frw:${blocks[blockNames[i]][l].value[0].value}`
-                                ]
-                            }
-                        })
-                    }else{
-                        return new Backend.Error(`Attemped to call undefined method ${blocks[blockNames[i]][l].value[0].value}!`)
-                    }
+                    return new Backend.Error(`Method '${callName}' does not exist!`)
                 }
             }else if(blocks[blockNames[i]][l].token == 'DEFINITION' || blocks[blockNames[i]][l].token == 'IF' || blocks[blockNames[i]][l].token == 'DELAY'){
                 if(blocks[blockNames[i]][l].value[1].value[1] == 'normal'){

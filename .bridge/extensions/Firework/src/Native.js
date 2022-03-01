@@ -1,6 +1,29 @@
 import * as Backend from './Backend.js';
 
 export const functions = {
+    rc: {
+        params: [
+            'STRING'
+        ],
+
+        asEntity (params) {
+            return {
+                animations: {},
+                sequence: [
+                    {
+                        runCommand: {
+                            command:[
+                                params[0].value
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+
+        supports: 'entity'
+    },
+
     move: {
         params: [
             'STRING'
@@ -13,7 +36,51 @@ export const functions = {
                     {
                         runCommand: {
                             command:[
-                                param[1].value
+                                'tp ' + params[0].value
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+
+        supports: 'entity'
+    },
+
+    die: {
+        params: [],
+
+        asEntity (params) {
+            return {
+                animations: {},
+                sequence: [
+                    {
+                        runCommand: {
+                            command:[
+                                'kill @s'
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+
+        supports: 'entity'
+    },
+
+    say: {
+        params: [
+            'STRING'
+        ],
+
+        asEntity (params) {
+            return {
+                animations: {},
+                sequence: [
+                    {
+                        runCommand: {
+                            command:[
+                                'say ' + params[0].value
                             ]
                         }
                     }
@@ -83,7 +150,7 @@ export function doesFunctionExistWithTemplate(name, template){
 
         return match
     }else{
-        return doesTemplateMatch(functions[name].params, template)
+        return doesTemplateMatch(template, functions[name].params)
     }
 }
 
@@ -155,7 +222,7 @@ export function getFunction(name, params){
             }
         }
     }else{
-        if(doesTemplateMatch(params, functions[name].variations[i].params)){
+        if(doesTemplateMatch(params, functions[name].params)){
             if(doesFunctionSupportMolang(name)){
                 return functions[name].asMolang(params)
             }
