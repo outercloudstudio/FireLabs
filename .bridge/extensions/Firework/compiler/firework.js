@@ -23,6 +23,173 @@
         })
     }
 
+    const functions = {
+        move: {
+            params: [
+                'STRING'
+            ],
+
+            asEntity (params) {
+                return {
+                    animations: {},
+                    sequence: [
+                        {
+                            runCommand: {
+                                command:[
+                                    param[1].value
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+
+            supports: 'entity'
+        },
+
+        rand: {
+            variations: [
+                {
+                    params: [],
+            
+                    asMolang (params) {
+                        return `(math.die_roll_integer(1, 0, 1) == 0)`
+                    }
+                },
+
+                {
+                    params: [
+                        'INTEGER'
+                    ],
+            
+                    asMolang (params) {
+                        console.log(params);
+                        console.log(params[0]);
+                        console.log(params[0].value);
+                        return `(math.die_roll_integer(1, 0, ${params[0].value}) == 0)`
+                    }
+                },
+
+                {
+                    params: [
+                        'INTEGER',
+                        'INTEGER'
+                    ],
+            
+                    asMolang (params) {
+                        return `(math.die_roll(1, ${params[0].value}, ${params[1].value}) == 0)`
+                    }
+                }
+            ],
+
+            supports: 'molang'
+        }
+    };
+
+    function doesFunctionExist(name){
+        return functions[name] != undefined
+    }
+
+    function doesFunctionExistWithTemplate(name, template){
+        if(!doesFunctionExist(name)){
+            return false
+        }
+
+        if(doesFunctionHaveVariations(name)){
+            let match = false;
+
+            for(const i in functions[name].variations){
+                if(doesTemplateMatch(template, functions[name].variations[i].params)){
+                    match = true;
+                }
+            }
+
+            return match
+        }else {
+            return doesTemplateMatch(functions[name].params, template)
+        }
+    }
+
+    function doesFunctionHaveVariations(name){
+        if(!doesFunctionExist(name)){
+            return false
+        }
+
+        return functions[name].variations != undefined
+    }
+
+    function doesFunctionSupportMolang(name){
+        if(!doesFunctionExist(name)){
+            return false
+        }
+
+        return functions[name].supports == 'molang'
+    }
+
+    function doesFunctionSupportEntity(name){
+        if(!doesFunctionExist(name)){
+            return false
+        }
+
+        return functions[name].supports == 'entity'
+    }
+
+    function doesTemplateMatch(params, template){
+        let pTemplate = [];
+
+        for(const i in params){
+            pTemplate.push(params[i].token);
+        }
+
+        if(template.length != pTemplate.length){
+            return false
+        }
+
+        for(const i in template){
+            if(pTemplate[i] != template[i]){
+                return false
+            }
+        }
+
+        return true
+    }
+
+    function getFunction(name, params){
+        if(!doesFunctionExist(name)){
+            console.warn('Function does not exist: ' + name);
+            return null
+        }
+
+        if(!doesFunctionExistWithTemplate(name, params)){
+            console.warn('Function does not exist with template: ' + name);
+            return null
+        }
+
+        if(doesFunctionHaveVariations(name)){
+            for(const i in functions[name].variations){
+                if(doesTemplateMatch(params, functions[name].variations[i].params)){
+                    if(doesFunctionSupportMolang(name)){
+                        return functions[name].variations[i].asMolang(params)
+                    }
+
+                    if(doesFunctionSupportEntity(name)){
+                        return functions[name].variations[i].asEntity(params)
+                    }
+                }
+            }
+        }else {
+            if(doesTemplateMatch(params, functions[name].variations[i].params)){
+                if(doesFunctionSupportMolang(name)){
+                    return functions[name].asMolang(params)
+                }
+
+                if(doesFunctionSupportEntity(name)){
+                    return functions[name].asEntity(params)
+                }
+            }
+        }
+    }
+
     function Compile(tree, config, source){
         //#region NOTE: Setup json values for editing
         let worldRuntime = source;
@@ -95,11 +262,19 @@
             }else if(expression.token == 'FLAG'){
                 result = `(q.actor_property('frw:${expression.value}'))`;
             }else if(expression.token == 'CALL'){
-                if(expression.value[0].value == 'rand'){
-                    result = `(math.die_roll(1, 0, 1) >= 0.5)`;
-                }else {
-                    return new Error(`Method '${expression.value[0].value}' is not supported in an expression!`)
+                if(!doesFunctionExist(expression.value[0].value)){
+                    return new Error(`Method '${expression.value[0].value}' does not exist!`)
                 }
+
+                if(!doesFunctionSupportMolang(expression.value[0].value)){
+                    return new Error(`Method '${expression.value[0].value}' is not supported in expression!`)
+                }
+
+                if(!doesFunctionExistWithTemplate(expression.value[0].value, expression.value.slice(1))){
+                    return new Error(`Method '${expression.value[0].value}' does not match any template!`)
+                }
+
+                result = getFunction(expression.value[0].value, expression.value.slice(1));
             }else {
                 return new Error('Unknown expression token: ' + expression.token + '!')
             }
@@ -1939,7 +2114,7 @@
     								}else {
     									if(dependAnaimtions[filePath]){
     										for(const animation of dependAnaimtions[filePath]){
-    											console.log('Removing anim in depend mode: ' + animation);
+    											//console.log('Removing anim in depend mode: ' + animation)
 
     											try{
     												outputFileSystem.unlink(outBPPath + 'animations/' + animation);
@@ -1952,7 +2127,7 @@
 
     								for(let i = 0; i < animations.length; i++){
     									if(inDependMode){
-    										console.log('Writing anim in depend mode: ' + animations[i]);
+    										//console.log('Writing anim in depend mode: ' + animations[i])
     										await outputFileSystem.writeFile(outBPPath + 'animations/' + animations[i], compiled.animations[animations[i]]);
     									}else {
     										outAnimations[animations[i]] = compiled.animations[animations[i]];

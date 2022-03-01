@@ -73,11 +73,19 @@ export function Compile(tree, config, source){
         }else if(expression.token == 'FLAG'){
             result = `(q.actor_property('frw:${expression.value}'))`
         }else if(expression.token == 'CALL'){
-            if(expression.value[0].value == 'rand'){
-                result = `(math.die_roll(1, 0, 1) >= 0.5)`
-            }else{
-                return new Backend.Error(`Method '${expression.value[0].value}' is not supported in an expression!`)
+            if(!Native.doesFunctionExist(expression.value[0].value)){
+                return new Backend.Error(`Method '${expression.value[0].value}' does not exist!`)
             }
+
+            if(!Native.doesFunctionSupportMolang(expression.value[0].value)){
+                return new Backend.Error(`Method '${expression.value[0].value}' is not supported in expression!`)
+            }
+
+            if(!Native.doesFunctionExistWithTemplate(expression.value[0].value, expression.value.slice(1))){
+                return new Backend.Error(`Method '${expression.value[0].value}' does not match any template!`)
+            }
+
+            result = Native.getFunction(expression.value[0].value, expression.value.slice(1))
         }else{
             return new Backend.Error('Unknown expression token: ' + expression.token + '!')
         }
