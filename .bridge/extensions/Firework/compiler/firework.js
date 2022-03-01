@@ -24,6 +24,7 @@
     }
 
     function Compile(tree, config, source){
+        //#region NOTE: Setup json values for editing
         let worldRuntime = source;
 
         let outAnimations = {};
@@ -47,7 +48,10 @@
         if(!worldRuntime['minecraft:entity'].description.scripts.animate){
             worldRuntime['minecraft:entity'].description.scripts.animate = [];
         }
+        //#endregion
 
+
+        //#region NOTE: Create variables to be added to durring overviewing the execution tree
         let blocks = {};
 
         let delays = {};
@@ -59,7 +63,10 @@
         let flags = [];
 
         let delaySteps = [];
+        //#endregion
 
+
+        //#region NOTE: Expression to molang to be used in setting values
         function expressionToMolang(expression){
             let result = '';
 
@@ -105,7 +112,10 @@
                 flags.push(flag.value);
             }
         }
+        //#endregion
 
+        
+        //#region NOTE: Optimizes expressions for molang
         function optimizeExpression(expression){
             let dynamic = false;
 
@@ -255,7 +265,10 @@
 
             return expression
         }
+        //#endregion
 
+
+        //#region NOTE: Optmizes Static Expression
         function searchForExpression(tree){
             if(tree.token == 'DEFINITION' || tree.token == 'IF' || tree.token == 'DELAY'){
                 const deep = searchForExpression(tree.value[1].value);
@@ -291,7 +304,7 @@
 
             return tree
         }
-
+       
         function indexCodeBlock(block, mode, condition = null, preferedID = null){
             for(let i = 0; i < block.value.length; i++){
                 const deep = searchForCodeBlock(block.value[i]);
@@ -349,7 +362,10 @@
 
             constants[token.value[1].value] = token.value[2];
         }
+        //#endregion
 
+
+        //#region NOTE: Search for code blocks like if, delay, and functions and index it
         function searchForCodeBlock(tree){
             if(tree.token == 'DEFINITION'){
                 const deep = indexCodeBlock(tree.value[1], 'normal', null, tree.value[0].value);
@@ -379,7 +395,10 @@
 
             return tree
         }
+        //#endregion
 
+
+        //#region NOTE: Search for flags and index them
         function searchForFlags(tree){
             if(tree.token == 'DEFINITION' || tree.token == 'IF' || tree.token == 'DELAY'){
                 if(tree.value[0].token == 'EXPRESSION'){
@@ -409,7 +428,10 @@
 
             return tree
         }
+        //#endregion
 
+
+        //#region NOTE: Do All The Searching Indexing And Optimization
         for(let i = 0; i < tree.length; i++){
             const deep = searchForExpression(tree[i]);
 
@@ -451,7 +473,10 @@
 
             tree[i] = deep;
         }
+        //#endregion
 
+
+        //#region NOTE: Create animations json for flags (sets up anims for adding and removing flag tags)
         //TODO: Make reliable
         for(let i = 0; i < flags.length; i++){
             let data = {
@@ -488,7 +513,10 @@
 
             worldRuntime['minecraft:entity'].events['frw:unset_' + flags[i]] = eventData;
         }
+        //#endregion
 
+
+        //#region NOTE: Create animations for dynamic values like if params and dynamic flags
         const dynamicValueNames = Object.getOwnPropertyNames(dynamicValues);
 
         //TODO: Make reliable
@@ -553,7 +581,10 @@
 
             worldRuntime['minecraft:entity'].description.scripts.animate.push(animData);
         }
+        //#endregion
 
+
+        //#region NOTE: Add code blocks as events to entities
         const blockNames = Object.getOwnPropertyNames(blocks);
 
         for(let i = 0; i < blockNames.length; i++){
@@ -698,13 +729,20 @@
 
             worldRuntime['minecraft:entity'].events['frw:' + blockNames[i]] = data;
         }
+        //#endregion
 
+
+        //#region NOTE: Setup delay steps
         worldRuntime['minecraft:entity'].events['frwb:delay'] = {
             run_command: {
                 command: delaySteps
             }
         };
+        //#endregion
 
+
+        //#region NOTE: Setup animations and delay step animations
+        //TODO: Make reliable based on tick.json
         let updateData = {
             "format_version": "1.10.0",
             "animations": {}
@@ -727,6 +765,8 @@
 
         worldRuntime['minecraft:entity'].description.animations['frw_update'] = 'animation.firework.runtime.' + updateID + '.update';
         worldRuntime['minecraft:entity'].description.scripts.animate.push('frw_update');
+        //#endregion
+
 
         return {
             animations: outAnimations,
