@@ -36,13 +36,10 @@ export function Compile(tree, config, source){
 
     let dynamicValues = {}
 
-    let constants = {}
-
     let flags = []
 
     let delaySteps = []
     //#endregion
-
 
     //#region NOTE: Expression to molang to be used in setting values DONE
     function expressionToMolang(expression){
@@ -264,16 +261,6 @@ export function Compile(tree, config, source){
             }
 
             tree.value[1].value = deep
-        }else if(tree.token == 'ASSIGN' && tree.value[0].value == 'const'){
-            if(tree.value[2].token == 'EXPRESSION'){
-                const deep = optimizeExpression(tree.value[2])
-
-                if(deep instanceof Backend.Error){
-                    return deep
-                }
-
-                tree.value[2] = deep
-            }
         }else if(tree.token == 'CALL'){
             for(let i = 1; i < tree.value.length; i++){
                 if(tree.value[i].token == 'EXPRESSION'){
@@ -335,18 +322,6 @@ export function Compile(tree, config, source){
         block = { value: [ID, mode], token: 'BLOCKREF'}
 
         return block
-    }
-
-    function indexConstant(token){
-        if(token.value[2].token == 'EXPRESSION' || token.value[2].dynamic){
-            return new Backend.Error(`Can not assign dyncamic value to const ${token.value[1].value}!`)
-        }
-
-        if(constants[token.value[1].value]){
-            return new Backend.Error(`Can not initialize constant ${token.value[1].value} more than once!`)
-        }
-
-        constants[token.value[1].value] = token.value[2]
     }
 
     function searchForCodeBlock(tree){
@@ -420,18 +395,6 @@ export function Compile(tree, config, source){
         }
 
         tree[i] = deep
-    }
-
-    for(let i = 0; i < tree.length; i++){
-        if(tree[i].token == 'ASSIGN'){
-            if(tree[i].value[0].value == 'const'){
-                const deep = indexConstant(tree[i])
-
-                if(deep instanceof Backend.Error){
-                    return deep
-                }
-            }
-        }
     }
 
     for(let i = 0; i < tree.length; i++){

@@ -292,13 +292,10 @@
 
         let dynamicValues = {};
 
-        let constants = {};
-
         let flags = [];
 
         let delaySteps = [];
         //#endregion
-
 
         //#region NOTE: Expression to molang to be used in setting values DONE
         function expressionToMolang(expression){
@@ -510,7 +507,7 @@
         //#endregion
 
 
-        //#region NOTE: Optmizes Static Expression
+        //#region NOTE: Util Functions
         function searchForExpression(tree){
             if(tree.token == 'DEFINITION' || tree.token == 'IF' || tree.token == 'DELAY'){
                 const deep = searchForExpression(tree.value[1].value);
@@ -520,16 +517,6 @@
                 }
 
                 tree.value[1].value = deep;
-            }else if(tree.token == 'ASSIGN' && tree.value[0].value == 'const'){
-                if(tree.value[2].token == 'EXPRESSION'){
-                    const deep = optimizeExpression(tree.value[2]);
-
-                    if(deep instanceof Error){
-                        return deep
-                    }
-
-                    tree.value[2] = deep;
-                }
             }else if(tree.token == 'CALL'){
                 for(let i = 1; i < tree.value.length; i++){
                     if(tree.value[i].token == 'EXPRESSION'){
@@ -593,21 +580,6 @@
             return block
         }
 
-        function indexConstant(token){
-            if(token.value[2].token == 'EXPRESSION' || token.value[2].dynamic){
-                return new Error(`Can not assign dyncamic value to const ${token.value[1].value}!`)
-            }
-
-            if(constants[token.value[1].value]){
-                return new Error(`Can not initialize constant ${token.value[1].value} more than once!`)
-            }
-
-            constants[token.value[1].value] = token.value[2];
-        }
-        //#endregion
-
-
-        //#region NOTE: Search for code blocks like if, delay, and functions and index it DONE
         function searchForCodeBlock(tree){
             if(tree.token == 'DEFINITION'){
                 const deep = indexCodeBlock(tree.value[1], 'normal', null, tree.value[0].value);
@@ -637,10 +609,7 @@
 
             return tree
         }
-        //#endregion
 
-
-        //#region NOTE: Search for flags and index them DONE
         function searchForFlags(tree){
             if(tree.token == 'DEFINITION' || tree.token == 'IF' || tree.token == 'DELAY'){
                 if(tree.value[0].token == 'EXPRESSION'){
@@ -682,18 +651,6 @@
             }
 
             tree[i] = deep;
-        }
-
-        for(let i = 0; i < tree.length; i++){
-            if(tree[i].token == 'ASSIGN'){
-                if(tree[i].value[0].value == 'const'){
-                    const deep = indexConstant(tree[i]);
-
-                    if(deep instanceof Error){
-                        return deep
-                    }
-                }
-            }
         }
 
         for(let i = 0; i < tree.length; i++){
@@ -1623,21 +1580,6 @@
                     tokens[l].splice(i, 4, { value: [token, nextToken, nextNextNextToken], token: 'ASSIGN' });
                 }
             }
-
-            for(let i = 0; i < tokens[l].length; i++){
-                const token = tokens[l][i];
-                const nextToken = tokens[l][i + 1];
-                const nextNextToken = tokens[l][i + 2];
-                const nextNextNextToken = tokens[l][i + 3];
-
-                if(token.token == 'KEYWORD' && token.value == 'const' && nextToken && nextToken.token == 'NAME' && nextNextToken && nextNextToken.token == 'SYMBOL' && nextNextToken.value == '=' && nextNextNextToken){
-                    if(!(nextNextNextToken.token == 'INTEGER' || nextNextNextToken.token == 'BOOLEAN' || nextNextNextToken.token == 'STRING' || nextNextNextToken.token == 'EXPRESSION')){
-                        return new Error(`Constant can't be assigned to ${nextNextNextToken.token}!`)
-                    }
-
-                    tokens[l].splice(i, 4, { value: [token, nextToken, nextNextNextToken], token: 'ASSIGN' });
-                }
-            }
         }
 
         return tokens
@@ -1761,13 +1703,19 @@
     }
 
     function GenerateETree(tokens){
+        console.log(JSON.parse(JSON.stringify(tokens)));
+
         tokens = splitLines(tokens);
+
+        console.log(JSON.parse(JSON.stringify(tokens)));
         
         tokens = buildCodeBlocks(tokens);
 
         if(tokens instanceof Error){
           return tokens
         }
+
+        console.log(JSON.parse(JSON.stringify(tokens)));
 
         tokens = buildCompoundTypes(tokens);
 
@@ -1787,11 +1735,15 @@
             return new Error('File was empty!')
         }
 
+        console.log(JSON.parse(JSON.stringify(tokens)));
+
         tokens = buildParams(tokens);
 
         if(tokens instanceof Error){
             return tokens
         }
+
+        console.log(JSON.parse(JSON.stringify(tokens)));
 
         tokens = buildExpressions(tokens);
 
@@ -1799,11 +1751,15 @@
             return tokens
         }
 
+        console.log(JSON.parse(JSON.stringify(tokens)));
+
         tokens = buildFlagAssignments(tokens);
 
         if(tokens instanceof Error){
             return tokens
         }
+
+        console.log(JSON.parse(JSON.stringify(tokens)));
 
         tokens = buildAsignments(tokens);
 
@@ -1811,11 +1767,15 @@
             return tokens
         }
 
+        console.log(JSON.parse(JSON.stringify(tokens)));
+
         tokens = buildIfAndDelay(tokens);
 
         if(tokens instanceof Error){
             return tokens
         }
+
+        console.log(JSON.parse(JSON.stringify(tokens)));
 
         tokens = buildFunctions(tokens);
 
@@ -1823,14 +1783,17 @@
           return tokens
         }
 
+        console.log(JSON.parse(JSON.stringify(tokens)));
+
         for(let l = 0; l < tokens.length; l++){
             if(tokens[l].length != 1){
-                tokens[l].splice(l, 1);
-                l--;
+                return new Error('Unresolved symbols 03:\n' + JSON.stringify(tokens[l]))
             }else {
                 tokens[l] = tokens[l][0];
             }
         }
+
+        console.log(JSON.parse(JSON.stringify(tokens)));
 
         return tokens
     }

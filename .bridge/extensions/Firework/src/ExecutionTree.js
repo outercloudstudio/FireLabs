@@ -1,13 +1,5 @@
 import * as Backend from './Backend.js'
 
-function sleep(milliseconds) {
-    const date = Date.now();
-    let currentDate = null;
-    do {
-      currentDate = Date.now();
-    } while (currentDate - date < milliseconds);
-}
-
 function splitLines(tokens){
     for(let i = 0; i < tokens.length; i++){
         const token = tokens[i]
@@ -327,7 +319,7 @@ function buildExpressionsSingle(tokens){
                 }
 
                 if(deep.length != 1){
-                    return new Backend.Error('Unresolved symbols 01:\n' + JSON.stringify(deep))
+                    return new Backend.Error('Unresolved symbols 01:\n' + JSON.stringify(deep, null, 2))
                 }
 
                 tokens.splice(i, endingIndex - i + 1, deep[0])
@@ -515,7 +507,7 @@ function buildParamsSingle(tokens){
                             }
 
                             if(parsed.length != 1){
-                                return new Backend.Error('Unresolved symbols 02:\n' + JSON.stringify(parsed))
+                                return new Backend.Error('Unresolved symbols 02:\n' + JSON.stringify(parsed, null, 2))
                             }
 
                             tokens.splice(j - 1, endIndex - j + 2, parsed[0])
@@ -564,7 +556,7 @@ function buildParamsSingle(tokens){
                         }
 
                         if(group.length != 1){
-                            return new Backend.Error('Unresolved symbols 03:\n' + JSON.stringify(group))
+                            return new Backend.Error('Unresolved symbols 03:\n' + JSON.stringify(group, null, 2))
                         }
 
                         groups.push(group[0])
@@ -580,7 +572,7 @@ function buildParamsSingle(tokens){
                 }
 
                 if(group.length != 1){
-                    return new Backend.Error('Unresolved symbols 04:\n' + JSON.stringify(group))
+                    return new Backend.Error('Unresolved symbols 04:\n' + JSON.stringify(group, null, 2))
                 }
 
                 groups.push(group[0])
@@ -634,21 +626,6 @@ function buildAsignments(tokens){
             if(token.token == 'KEYWORD' && token.value == 'dyn' && nextToken && nextToken.token == 'NAME' && nextNextToken && nextNextToken.token == 'SYMBOL' && nextNextToken.value == '=' && nextNextNextToken){
                 if(!(nextNextNextToken.token == 'MOLANG' || nextNextNextToken.token == 'EXPRESSION')){
                     return new Backend.Error(`Dynamic can't be assigned to ${nextNextNextToken.token}!`)
-                }
-
-                tokens[l].splice(i, 4, { value: [token, nextToken, nextNextNextToken], token: 'ASSIGN' })
-            }
-        }
-
-        for(let i = 0; i < tokens[l].length; i++){
-            const token = tokens[l][i]
-            const nextToken = tokens[l][i + 1]
-            const nextNextToken = tokens[l][i + 2]
-            const nextNextNextToken = tokens[l][i + 3]
-
-            if(token.token == 'KEYWORD' && token.value == 'const' && nextToken && nextToken.token == 'NAME' && nextNextToken && nextNextToken.token == 'SYMBOL' && nextNextToken.value == '=' && nextNextNextToken){
-                if(!(nextNextNextToken.token == 'INTEGER' || nextNextNextToken.token == 'BOOLEAN' || nextNextNextToken.token == 'STRING' || nextNextNextToken.token == 'EXPRESSION')){
-                    return new Backend.Error(`Constant can't be assigned to ${nextNextNextToken.token}!`)
                 }
 
                 tokens[l].splice(i, 4, { value: [token, nextToken, nextNextNextToken], token: 'ASSIGN' })
@@ -778,7 +755,7 @@ function buildFlagAssignments(tokens){
 
 export function GenerateETree(tokens){
     tokens = splitLines(tokens)
-    
+
     tokens = buildCodeBlocks(tokens)
 
     if(tokens instanceof Backend.Error){
@@ -841,8 +818,7 @@ export function GenerateETree(tokens){
 
     for(let l = 0; l < tokens.length; l++){
         if(tokens[l].length != 1){
-            tokens[l].splice(l, 1)
-            l--
+            return new Backend.Error('Unresolved symbols 05:\n' + JSON.stringify(tokens[l], null, 2))
         }else{
             tokens[l] = tokens[l][0]
         }
