@@ -405,10 +405,10 @@ function buildExpressionsSingle(tokens){
             if(prevToken && nextToken){
                 if(nextToken.token == 'SYMBOL' && nextToken.value == '='){
                     let nextNextToken = tokens[i + 2]
-                    
+
                     if(token.value == '>' || token.value == '<'){
-                        if(!(nextNextToken.token == 'INTEGER' || nextNextToken.token == 'EXPRESSION') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION')){
-                            return new Backend.Error(`Can not do operation '${token.value}' with '${nextNextToken.token}' and '${prevToken.token}'!`)
+                        if(!(nextNextToken.token == 'INTEGER' || nextNextToken.token == 'EXPRESSION' || nextNextToken.token == 'NAME') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'NAME')){
+                            return new Backend.Error(`Can not do operation '${token.value + nextToken.value}' with '${nextNextToken.token}' and '${prevToken.token}'!`)
                         }
                         
                         const newToken = { value: token.value + nextToken.value, token: 'SYMBOL' }
@@ -417,18 +417,18 @@ function buildExpressionsSingle(tokens){
 
                         i--
                     }else{
-                        if(!(nextNextToken.token == 'INTEGER' || nextNextToken.token == 'EXPRESSION' || nextNextToken.token == 'BOOLEAN' || nextNextToken.token == 'FLAG' || nextNextToken.token == 'MOLANG') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'BOOLEAN' || prevToken.token == 'FLAG' || prevToken.token == 'MOLANG')){
-                            return new Backend.Error(`Can not do operation '${token.value}' with '${nextNextToken.token}' and '${prevToken.token}'!`)
+                        if(!(nextNextToken.token == 'INTEGER' || nextNextToken.token == 'EXPRESSION' || nextNextToken.token == 'BOOLEAN' || nextNextToken.token == 'FLAG' || nextNextToken.token == 'MOLANG' || nextNextToken.token == 'NAME') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'BOOLEAN' || prevToken.token == 'FLAG' || prevToken.token == 'MOLANG' || prevToken.token == 'NAME')){
+                            return new Backend.Error(`Can not do operation '${token.value + nextToken.value}' with '${nextNextToken.token}' and '${prevToken.token}'!`)
                         }
 
                         const newToken = { value: token.value + nextToken.value, token: 'SYMBOL' }
-                            
+
                         tokens.splice(i - 1, 4, { value: [newToken, prevToken, nextNextToken], token: 'EXPRESSION' })
 
                         i--
                     }
                 }else if(token.value == '>' || token.value == '<'){
-                    if(!(nextToken.token == 'INTEGER' || nextToken.token == 'EXPRESSION') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION')){
+                    if(!(nextToken.token == 'INTEGER' || nextToken.token == 'EXPRESSION' || nextNextToken.token == 'NAME') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'NAME')){
                         return new Backend.Error(`Can not do operation '${token.value}' with '${nextToken.token}' and '${prevToken.token}'!`)
                     }
 

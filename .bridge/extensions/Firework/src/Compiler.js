@@ -2,7 +2,7 @@ import * as Backend from './Backend.js'
 import * as Native from './Native.js'
 
 export function Compile(tree, config, source){
-    //#region NOTE: Setup json values for editing
+    //#region NOTE: Setup json values for editing DONE
     let worldRuntime = source
 
     let outAnimations = {}
@@ -29,7 +29,7 @@ export function Compile(tree, config, source){
     //#endregion
 
 
-    //#region NOTE: Create variables to be added to durring overviewing the execution tree
+    //#region NOTE: Create variables to be added to durring overviewing the execution tree DONE
     let blocks = {}
 
     let delays = {}
@@ -44,7 +44,7 @@ export function Compile(tree, config, source){
     //#endregion
 
 
-    //#region NOTE: Expression to molang to be used in setting values
+    //#region NOTE: Expression to molang to be used in setting values DONE
     function expressionToMolang(expression){
         let result = ''
 
@@ -254,7 +254,7 @@ export function Compile(tree, config, source){
     //#endregion
 
 
-    //#region NOTE: Optmizes Static Expression
+    //#region NOTE: Util Functions
     function searchForExpression(tree){
         if(tree.token == 'DEFINITION' || tree.token == 'IF' || tree.token == 'DELAY'){
             const deep = searchForExpression(tree.value[1].value)
@@ -348,10 +348,7 @@ export function Compile(tree, config, source){
 
         constants[token.value[1].value] = token.value[2]
     }
-    //#endregion
 
-
-    //#region NOTE: Search for code blocks like if, delay, and functions and index it
     function searchForCodeBlock(tree){
         if(tree.token == 'DEFINITION'){
             const deep = indexCodeBlock(tree.value[1], 'normal', null, tree.value[0].value)
@@ -381,10 +378,7 @@ export function Compile(tree, config, source){
 
         return tree
     }
-    //#endregion
 
-
-    //#region NOTE: Search for flags and index them
     function searchForFlags(tree){
         if(tree.token == 'DEFINITION' || tree.token == 'IF' || tree.token == 'DELAY'){
             if(tree.value[0].token == 'EXPRESSION'){
@@ -417,7 +411,7 @@ export function Compile(tree, config, source){
     //#endregion
 
 
-    //#region NOTE: Do All The Searching Indexing And Optimization
+    //#region NOTE: Do All The Searching Indexing And Optimization 
     for(let i = 0; i < tree.length; i++){
         const deep = searchForExpression(tree[i])
 
@@ -721,39 +715,12 @@ export function Compile(tree, config, source){
     //#endregion
 
 
-    //#region NOTE: Setup delay steps
+    //#region NOTE: Setup delay steps DONE
     worldRuntime['minecraft:entity'].events['frwb:delay'] = {
         run_command: {
             command: delaySteps
         }
     }
-    //#endregion
-
-
-    //#region NOTE: Setup animations and delay step animations
-    //TODO: Make reliable based on tick.json
-    let updateData = {
-        "format_version": "1.10.0",
-        "animations": {}
-    }
-
-    const updateID = Backend.uuidv4()
-
-    updateData.animations['animation.firework.runtime.' + updateID + '.update'] = {
-        "loop": true,
-        "timeline": {
-            "0.0": [
-                `/event entity @s frw:update`,
-                `/event entity @s frwb:delay`
-            ]
-        },
-        "animation_length": 0.001
-    }
-
-    outAnimations['frw_' + updateID + '_update.json'] = JSON.stringify(updateData, null, 4)
-
-    worldRuntime['minecraft:entity'].description.animations['frw_update'] = 'animation.firework.runtime.' + updateID + '.update'
-    worldRuntime['minecraft:entity'].description.scripts.animate.push('frw_update')
     //#endregion
 
 

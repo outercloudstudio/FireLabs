@@ -258,7 +258,7 @@
     }
 
     function Compile(tree, config, source){
-        //#region NOTE: Setup json values for editing
+        //#region NOTE: Setup json values for editing DONE
         let worldRuntime = source;
 
         let outAnimations = {};
@@ -285,7 +285,7 @@
         //#endregion
 
 
-        //#region NOTE: Create variables to be added to durring overviewing the execution tree
+        //#region NOTE: Create variables to be added to durring overviewing the execution tree DONE
         let blocks = {};
 
         let delays = {};
@@ -300,7 +300,7 @@
         //#endregion
 
 
-        //#region NOTE: Expression to molang to be used in setting values
+        //#region NOTE: Expression to molang to be used in setting values DONE
         function expressionToMolang(expression){
             let result = '';
 
@@ -607,7 +607,7 @@
         //#endregion
 
 
-        //#region NOTE: Search for code blocks like if, delay, and functions and index it
+        //#region NOTE: Search for code blocks like if, delay, and functions and index it DONE
         function searchForCodeBlock(tree){
             if(tree.token == 'DEFINITION'){
                 const deep = indexCodeBlock(tree.value[1], 'normal', null, tree.value[0].value);
@@ -640,7 +640,7 @@
         //#endregion
 
 
-        //#region NOTE: Search for flags and index them
+        //#region NOTE: Search for flags and index them DONE
         function searchForFlags(tree){
             if(tree.token == 'DEFINITION' || tree.token == 'IF' || tree.token == 'DELAY'){
                 if(tree.value[0].token == 'EXPRESSION'){
@@ -673,7 +673,7 @@
         //#endregion
 
 
-        //#region NOTE: Do All The Searching Indexing And Optimization
+        //#region NOTE: Do All The Searching Indexing And Optimization 
         for(let i = 0; i < tree.length; i++){
             const deep = searchForExpression(tree[i]);
 
@@ -977,39 +977,12 @@
         //#endregion
 
 
-        //#region NOTE: Setup delay steps
+        //#region NOTE: Setup delay steps DONE
         worldRuntime['minecraft:entity'].events['frwb:delay'] = {
             run_command: {
                 command: delaySteps
             }
         };
-        //#endregion
-
-
-        //#region NOTE: Setup animations and delay step animations
-        //TODO: Make reliable based on tick.json
-        let updateData = {
-            "format_version": "1.10.0",
-            "animations": {}
-        };
-
-        const updateID = uuidv4();
-
-        updateData.animations['animation.firework.runtime.' + updateID + '.update'] = {
-            "loop": true,
-            "timeline": {
-                "0.0": [
-                    `/event entity @s frw:update`,
-                    `/event entity @s frwb:delay`
-                ]
-            },
-            "animation_length": 0.001
-        };
-
-        outAnimations['frw_' + updateID + '_update.json'] = JSON.stringify(updateData, null, 4);
-
-        worldRuntime['minecraft:entity'].description.animations['frw_update'] = 'animation.firework.runtime.' + updateID + '.update';
-        worldRuntime['minecraft:entity'].description.scripts.animate.push('frw_update');
         //#endregion
 
 
@@ -1416,10 +1389,10 @@
                 if(prevToken && nextToken){
                     if(nextToken.token == 'SYMBOL' && nextToken.value == '='){
                         let nextNextToken = tokens[i + 2];
-                        
+
                         if(token.value == '>' || token.value == '<'){
-                            if(!(nextNextToken.token == 'INTEGER' || nextNextToken.token == 'EXPRESSION') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION')){
-                                return new Error(`Can not do operation '${token.value}' with '${nextNextToken.token}' and '${prevToken.token}'!`)
+                            if(!(nextNextToken.token == 'INTEGER' || nextNextToken.token == 'EXPRESSION' || nextNextToken.token == 'NAME') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'NAME')){
+                                return new Error(`Can not do operation '${token.value + nextToken.value}' with '${nextNextToken.token}' and '${prevToken.token}'!`)
                             }
                             
                             const newToken = { value: token.value + nextToken.value, token: 'SYMBOL' };
@@ -1428,18 +1401,18 @@
 
                             i--;
                         }else {
-                            if(!(nextNextToken.token == 'INTEGER' || nextNextToken.token == 'EXPRESSION' || nextNextToken.token == 'BOOLEAN' || nextNextToken.token == 'FLAG' || nextNextToken.token == 'MOLANG') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'BOOLEAN' || prevToken.token == 'FLAG' || prevToken.token == 'MOLANG')){
-                                return new Error(`Can not do operation '${token.value}' with '${nextNextToken.token}' and '${prevToken.token}'!`)
+                            if(!(nextNextToken.token == 'INTEGER' || nextNextToken.token == 'EXPRESSION' || nextNextToken.token == 'BOOLEAN' || nextNextToken.token == 'FLAG' || nextNextToken.token == 'MOLANG' || nextNextToken.token == 'NAME') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'BOOLEAN' || prevToken.token == 'FLAG' || prevToken.token == 'MOLANG' || prevToken.token == 'NAME')){
+                                return new Error(`Can not do operation '${token.value + nextToken.value}' with '${nextNextToken.token}' and '${prevToken.token}'!`)
                             }
 
                             const newToken = { value: token.value + nextToken.value, token: 'SYMBOL' };
-                                
+
                             tokens.splice(i - 1, 4, { value: [newToken, prevToken, nextNextToken], token: 'EXPRESSION' });
 
                             i--;
                         }
                     }else if(token.value == '>' || token.value == '<'){
-                        if(!(nextToken.token == 'INTEGER' || nextToken.token == 'EXPRESSION') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION')){
+                        if(!(nextToken.token == 'INTEGER' || nextToken.token == 'EXPRESSION' || nextNextToken.token == 'NAME') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'NAME')){
                             return new Error(`Can not do operation '${token.value}' with '${nextToken.token}' and '${prevToken.token}'!`)
                         }
 
