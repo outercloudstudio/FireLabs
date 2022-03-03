@@ -1,0 +1,41 @@
+{
+	"format_version": "1.18.0",
+	"minecraft:entity": {
+		"description": {
+			"identifier": "fl:structure_placer",
+			"is_summonable": true,
+			"is_spawnable": true
+		},
+		"component_groups": {
+			"fl:despawn": {
+				"minecraft:instant_despawn": {}
+			}
+		},
+		"components": {
+			"minecraft:collision_box": {
+				"height": 0,
+				"width": 0
+			},
+			"minecraft:damage_sensor": {
+				"triggers": {
+					"cause": "all",
+					"deals_damage": false
+				}
+			},
+			"minecraft:physics": {
+				"has_collision": false,
+				"has_gravity": false
+			},
+			"frw:structure_placer": {}
+		},
+		"events": {
+			"despawn": {
+				"add": {
+					"component_groups": [
+						"fl:despawn"
+					]
+				}
+			}
+		}
+	}
+}

@@ -1,5 +1,5 @@
 func place => {
-    if(rand() || rand() || rand() || yas == 2) => {
+    if(rand() || rand() || rand()) => {
         rc("tp ~ ~0.5 ~")
         rc("execute @e[tag=sg, x=~, y=~-0.5, z=~, dx=0, dy=0, dz=0] ~ ~ ~ kill @e[tag=sg, x=~, y=~0.5, z=~, dx=0, dy=0, dz=0]")
 

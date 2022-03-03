@@ -1,0 +1,33 @@
+func placestructure => {
+    if (!$stop && ?"query.scoreboard('count') <= 6") => {
+        rc("tp @s ~1 ~ ~")
+        rc("setblock ~ ~ ~ dirt")
+        addscore()
+        placestructure()
+        if (?"query.scoreboard('count') == 6") => {
+            $stop = true
+        }
+    }
+}
+
+
+func addscore => {
+    rc("scoreboard players add @s count 1")
+}
+
+func setup => {
+    if (!$firststart) => {
+        rc("function setup")
+        delay(1) => {
+            $firststart = true
+            rc("say yoo agin")
+            placestructure()
+        }
+    }
+}
+
+func start => {
+    $firststart = false
+    $stop = false
+    setup()
+}
