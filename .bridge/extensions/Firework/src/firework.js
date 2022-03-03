@@ -169,6 +169,8 @@ module.exports = ({ fileType, fileSystem, projectRoot, outputFileSystem, options
 									throw tree.message
 								}
 
+								console.log(filePath + ' : ' + script)
+
 								const compiled = Compiler.Compile(tree, {
 									delayChannels: 3  
 								}, fileContent)
