@@ -34,7 +34,7 @@
                     animations: {},
                     sequence: [
                         {
-                            runCommand: {
+                            run_command: {
                                 command:[
                                     params[0].value
                                 ]
@@ -57,7 +57,7 @@
                     animations: {},
                     sequence: [
                         {
-                            runCommand: {
+                            run_command: {
                                 command:[
                                     'tp ' + params[0].value
                                 ]
@@ -78,7 +78,7 @@
                     animations: {},
                     sequence: [
                         {
-                            runCommand: {
+                            run_command: {
                                 command:[
                                     'kill @s'
                                 ]
@@ -101,7 +101,7 @@
                     animations: {},
                     sequence: [
                         {
-                            runCommand: {
+                            run_command: {
                                 command:[
                                     'say ' + params[0].value
                                 ]
@@ -1268,7 +1268,7 @@
                     }
 
                     if(deep.length != 1){
-                        return new Error('Unresolved symbols 01:\n' + JSON.stringify(deep))
+                        return new Error('Unresolved symbols 01:\n' + JSON.stringify(deep, null, 2))
                     }
 
                     tokens.splice(i, endingIndex - i + 1, deep[0]);
@@ -1391,7 +1391,8 @@
                 let prevToken = tokens[i - 1];
 
                 if(prevToken && nextNextToken){
-                    if(!(nextNextToken.token == 'FLAG' || nextNextToken.token == 'EXPRESSION' || nextNextToken.token == 'BOOLEAN' || nextNextToken.token == 'MOLANG' || nextNextToken.token == 'CALL') || !(prevToken.token == 'FLAG' || prevToken.token == 'EXPRESSION' || prevToken.token == 'BOOLEAN' || prevToken.token == 'MOLANG' || prevToken.token == 'CALL')){
+                    if(!(nextNextToken.token == 'FLAG' || nextNextToken.token == 'EXPRESSION' || nextNextToken.token == 'BOOLEAN' || nextNextToken.token == 'MOLANG' || nextNextToken.token == 'CALL' || nextNextToken.token == 'NAME') || !(prevToken.token == 'FLAG' || prevToken.token == 'EXPRESSION' || prevToken.token == 'BOOLEAN' || prevToken.token == 'MOLANG' || prevToken.token == 'CALL' || prevToken.token == 'NAME')){
+                        console.log(tokens);
                         return new Error(`Can not do operation '${token.value + nextToken.value}' with '${nextNextToken.token}' and '${prevToken.token}'!`)
                     }
 
@@ -1456,7 +1457,7 @@
                                 }
 
                                 if(parsed.length != 1){
-                                    return new Error('Unresolved symbols 02:\n' + JSON.stringify(parsed))
+                                    return new Error('Unresolved symbols 02:\n' + JSON.stringify(parsed, null, 2))
                                 }
 
                                 tokens.splice(j - 1, endIndex - j + 2, parsed[0]);
@@ -1505,7 +1506,8 @@
                             }
 
                             if(group.length != 1){
-                                return new Error('Unresolved symbols 03:\n' + JSON.stringify(group))
+                                console.log(group);
+                                return new Error('Unresolved symbols 03:\n' + JSON.stringify(group, null, 2))
                             }
 
                             groups.push(group[0]);
@@ -1521,7 +1523,7 @@
                     }
 
                     if(group.length != 1){
-                        return new Error('Unresolved symbols 04:\n' + JSON.stringify(group))
+                        return new Error('Unresolved symbols 04:\n' + JSON.stringify(group, null, 2))
                     }
 
                     groups.push(group[0]);
@@ -1703,19 +1705,13 @@
     }
 
     function GenerateETree(tokens){
-        console.log(JSON.parse(JSON.stringify(tokens)));
-
         tokens = splitLines(tokens);
 
-        console.log(JSON.parse(JSON.stringify(tokens)));
-        
         tokens = buildCodeBlocks(tokens);
 
         if(tokens instanceof Error){
           return tokens
         }
-
-        console.log(JSON.parse(JSON.stringify(tokens)));
 
         tokens = buildCompoundTypes(tokens);
 
@@ -1735,15 +1731,11 @@
             return new Error('File was empty!')
         }
 
-        console.log(JSON.parse(JSON.stringify(tokens)));
-
         tokens = buildParams(tokens);
 
         if(tokens instanceof Error){
             return tokens
         }
-
-        console.log(JSON.parse(JSON.stringify(tokens)));
 
         tokens = buildExpressions(tokens);
 
@@ -1751,15 +1743,11 @@
             return tokens
         }
 
-        console.log(JSON.parse(JSON.stringify(tokens)));
-
         tokens = buildFlagAssignments(tokens);
 
         if(tokens instanceof Error){
             return tokens
         }
-
-        console.log(JSON.parse(JSON.stringify(tokens)));
 
         tokens = buildAsignments(tokens);
 
@@ -1767,15 +1755,11 @@
             return tokens
         }
 
-        console.log(JSON.parse(JSON.stringify(tokens)));
-
         tokens = buildIfAndDelay(tokens);
 
         if(tokens instanceof Error){
             return tokens
         }
-
-        console.log(JSON.parse(JSON.stringify(tokens)));
 
         tokens = buildFunctions(tokens);
 
@@ -1783,17 +1767,13 @@
           return tokens
         }
 
-        console.log(JSON.parse(JSON.stringify(tokens)));
-
         for(let l = 0; l < tokens.length; l++){
             if(tokens[l].length != 1){
-                return new Error('Unresolved symbols 03:\n' + JSON.stringify(tokens[l]))
+                return new Error('Unresolved symbols 05:\n' + JSON.stringify(tokens[l], null, 2))
             }else {
                 tokens[l] = tokens[l][0];
             }
         }
-
-        console.log(JSON.parse(JSON.stringify(tokens)));
 
         return tokens
     }
@@ -1843,7 +1823,6 @@
 
     const keywords = [
         'if',
-        'const',
         'dyn',
         'func',
         'delay'
