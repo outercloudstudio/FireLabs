@@ -258,6 +258,8 @@
     }
 
     function Compile(tree, config, source){
+        console.log(tree);
+
         //#region NOTE: Setup json values for editing DONE
         let worldRuntime = source;
 
@@ -297,6 +299,7 @@
         let delaySteps = [];
         //#endregion
 
+        
         //#region NOTE: Expression to molang to be used in setting values DONE
         function expressionToMolang(expression){
             let result = '';

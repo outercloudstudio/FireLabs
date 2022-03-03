@@ -2,6 +2,8 @@ import * as Backend from './Backend.js'
 import * as Native from './Native.js'
 
 export function Compile(tree, config, source){
+    console.log(tree)
+
     //#region NOTE: Setup json values for editing DONE
     let worldRuntime = source
 
@@ -39,66 +41,12 @@ export function Compile(tree, config, source){
     let flags = []
 
     let delaySteps = []
-    //#endregion
 
-    //#region NOTE: Expression to molang to be used in setting values DONE
-    function expressionToMolang(expression){
-        let result = ''
-
-        if(expression.token == 'INTEGER' || expression.token == 'BOOLEAN'){
-            result = expression.value
-        }else if(expression.token == 'MOLANG'){
-            result = '(' + expression.value + ')'
-        }else if(expression.token == 'EXPRESSION'){
-            if(expression.value[0].value == '!'){
-                const deep = expressionToMolang(expression.value[1]) + ' == 0'
-
-                if(deep instanceof Backend.Error){
-                    return deep
-                }
-
-                result = '(' + deep + ')'
-            }else{
-                const deep = expressionToMolang(expression.value[1]) + ' ' + expression.value[0].value + ' ' + expressionToMolang(expression.value[2])
-
-                if(deep instanceof Backend.Error){
-                    return deep
-                }
-
-                result = '(' + deep + ')'
-            }
-        }else if(expression.token == 'FLAG'){
-            result = `(q.actor_property('frw:${expression.value}'))`
-        }else if(expression.token == 'CALL'){
-            if(!Native.doesFunctionExist(expression.value[0].value)){
-                return new Backend.Error(`Method '${expression.value[0].value}' does not exist!`)
-            }
-
-            if(!Native.doesFunctionSupportMolang(expression.value[0].value)){
-                return new Backend.Error(`Method '${expression.value[0].value}' is not supported in expression!`)
-            }
-
-            if(!Native.doesFunctionExistWithTemplate(expression.value[0].value, expression.value.slice(1))){
-                return new Backend.Error(`Method '${expression.value[0].value}' does not match any template!`)
-            }
-
-            result = Native.getFunction(expression.value[0].value, expression.value.slice(1))
-        }else{
-            return new Backend.Error('Unknown expression token: ' + expression.token + '!')
-        }
-
-        return result
-    }
-
-    function indexFlag(flag){
-        if(!flags.includes(flag.value)){
-            flags.push(flag.value)
-        }
-    }
+    let dynamicFlags = {}
     //#endregion
 
     
-    //#region NOTE: Optimizes expressions for molang
+    //#region NOTE: Expression to molang to be used in setting values DONE
     function optimizeExpression(expression){
         let dynamic = false
 
@@ -248,6 +196,117 @@ export function Compile(tree, config, source){
 
         return expression
     }
+    
+    function expressionToMolang(expression){
+        let result = ''
+
+        if(expression.token == 'INTEGER' || expression.token == 'BOOLEAN'){
+            result = expression.value
+        }else if(expression.token == 'MOLANG'){
+            result = '(' + expression.value + ')'
+        }else if(expression.token == 'EXPRESSION'){
+            if(expression.value[0].value == '!'){
+                const deep = expressionToMolang(expression.value[1]) + ' == 0'
+
+                if(deep instanceof Backend.Error){
+                    return deep
+                }
+
+                result = '(' + deep + ')'
+            }else{
+                const deep = expressionToMolang(expression.value[1]) + ' ' + expression.value[0].value + ' ' + expressionToMolang(expression.value[2])
+
+                if(deep instanceof Backend.Error){
+                    return deep
+                }
+
+                result = '(' + deep + ')'
+            }
+        }else if(expression.token == 'FLAG'){
+            result = `(q.actor_property('frw:${expression.value}'))`
+        }else if(expression.token == 'CALL'){
+            if(!Native.doesFunctionExist(expression.value[0].value)){
+                return new Backend.Error(`Method '${expression.value[0].value}' does not exist!`)
+            }
+
+            if(!Native.doesFunctionSupportMolang(expression.value[0].value)){
+                return new Backend.Error(`Method '${expression.value[0].value}' is not supported in expression!`)
+            }
+
+            if(!Native.doesFunctionExistWithTemplate(expression.value[0].value, expression.value.slice(1))){
+                return new Backend.Error(`Method '${expression.value[0].value}' does not match any template!`)
+            }
+
+            result = Native.getFunction(expression.value[0].value, expression.value.slice(1))
+        }else{
+            return new Backend.Error('Unknown expression token: ' + expression.token + '!')
+        }
+
+        return result
+    }
+    //#endregion
+
+    
+    //#region NOTE: Indexing functions
+    function indexDynamicValue(ID, condition){
+        dynamicValues[ID] = {
+            condition: deep
+        }
+    }
+
+    function indexDelay(ID, time){
+        delays[ID] = time
+    }
+    
+    function indexFlag(flag){
+        if(!flags.includes(flag.value)){
+            flags.push(flag.value)
+        }
+    }
+
+    function indexCodeBlock(block, mode, condition = null, preferedID = null){
+        for(let i = 0; i < block.value.length; i++){
+            const deep = searchForCodeBlock(block.value[i])
+
+            if(deep instanceof Backend.Error){
+                return deep
+            }
+
+            block.value[i] = deep
+        }
+
+        let ID = Backend.uuidv4()
+
+        if(preferedID != null && !blocks[preferedID]){
+            ID = preferedID
+        }
+
+        if(mode == 'conditional'){
+            const deep = expressionToMolang(condition)
+
+            if(deep instanceof Backend.Error){
+                return deep
+            }
+
+            indexDynamicValue(ID, deep)
+        }else if(mode == 'delay'){
+            if(condition.token != 'INTEGER'){
+                return new Backend.Error(`Delay must be an integer!`)
+            }
+
+            if(parseInt(condition.value) <= 0){
+                return new Backend.Error(`Delay must be greater than 0!`)
+            }
+
+            indexDelay(ID, parseInt(condition.value))
+        }
+
+        blocks[ID] = block.value
+
+        block = { value: [ID, mode], token: 'BLOCKREF'}
+
+        return block
+    }
     //#endregion
 
 
@@ -276,53 +335,7 @@ export function Compile(tree, config, source){
         }
 
         return tree
-    }
-   
-    function indexCodeBlock(block, mode, condition = null, preferedID = null){
-        for(let i = 0; i < block.value.length; i++){
-            const deep = searchForCodeBlock(block.value[i])
-
-            if(deep instanceof Backend.Error){
-                return deep
-            }
-
-            block.value[i] = deep
-        }
-
-        let ID = Backend.uuidv4()
-
-        if(preferedID != null && !blocks[preferedID]){
-            ID = preferedID
-        }
-
-        if(mode == 'conditional'){
-            const deep = expressionToMolang(condition)
-
-            if(deep instanceof Backend.Error){
-                return deep
-            }
-
-            dynamicValues[ID] = {
-                condition: deep
-            }
-        }else if(mode == 'delay'){
-            if(condition.token != 'INTEGER'){
-                return new Backend.Error(`Delay must be an integer!`)
-            }
-
-            if(parseInt(condition.value) <= 0){
-                return new Backend.Error(`Delay must be greater than 0!`)
-            }
-
-            delays[ID] = parseInt(condition.value)
-        }
-
-        blocks[ID] = block.value
-
-        block = { value: [ID, mode], token: 'BLOCKREF'}
-
-        return block
-    }
+    } 
 
     function searchForCodeBlock(tree){
         if(tree.token == 'DEFINITION'){
