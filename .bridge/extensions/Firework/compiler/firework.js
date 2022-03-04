@@ -168,10 +168,32 @@
         if(deep instanceof Error){
             return deep
         }
-
-        console.log(flags);
         //#endregion
         
+        //#region NOTE: Dynamic Value Init - Index Functions
+        let functions = {};
+
+        function searchForFunctions(tree){
+            for(let i = 0; i < tree.length; i++){
+                if(tree[i].token == 'DEFINITION'){
+                    if(functions[tree[i].value[0].value]){
+                        return new Error(`Function '${tree[i].value[1].value}' already exists!`)
+                    }
+
+                    functions[tree[i].value[0].value] = tree[i].value[1].value;
+                }
+            }
+        }
+
+        deep = searchForFunctions(tree);
+
+        if(deep instanceof Error){
+            return deep
+        }
+
+        console.log(functions);
+        //#endregion
+
         return {
             animations: outAnimations,
             entity: worldRuntime
