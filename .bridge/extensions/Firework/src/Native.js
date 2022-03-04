@@ -98,7 +98,9 @@ export const functions = {
         
                 asMolang (params) {
                     return `(math.die_roll_integer(1, 0, 1) == 0)`
-                }
+                },
+
+                dynamic: true
             },
 
             {
@@ -107,11 +109,10 @@ export const functions = {
                 ],
         
                 asMolang (params) {
-                    console.log(params)
-                    console.log(params[0])
-                    console.log(params[0].value)
                     return `(math.die_roll_integer(1, 0, ${params[0].value}) == 0)`
-                }
+                },
+
+                dynamic: true
             },
 
             {
@@ -122,7 +123,9 @@ export const functions = {
         
                 asMolang (params) {
                     return `(math.die_roll(1, ${params[0].value}, ${params[1].value}) == 0)`
-                }
+                },
+
+                dynamic: true
             }
         ],
 
@@ -142,7 +145,7 @@ export function doesFunctionExistWithTemplate(name, template){
     if(doesFunctionHaveVariations(name)){
         let match = false
 
-        for(const i in functions[name].variations){
+        for(let i = 0; i < functions[name].variations.length; i++){
             if(doesTemplateMatch(template, functions[name].variations[i].params)){
                 match = true
             }
@@ -231,5 +234,280 @@ export function getFunction(name, params){
                 return functions[name].asEntity(params)
             }
         }
+    }
+}
+
+export function getIsFunctionDynamic(name, params){
+    if(!doesFunctionExist(name)){
+        console.warn('Function does not exist: ' + name)
+        return null
+    }
+
+    if(!doesFunctionExistWithTemplate(name, params)){
+        console.warn('Function does not exist with template: ' + name)
+        return null
+    }
+
+    if(doesFunctionHaveVariations(name)){
+        for(const i in functions[name].variations){
+            if(doesTemplateMatch(params, functions[name].variations[i].params)){
+                return functions[name].variations[i].dynamic
+            }
+        }
+    }else{
+        if(doesTemplateMatch(params, functions[name].params)){
+            return functions[name].dynamic
+        }
+    }
+}
+
+export const operations = {
+    '+': {
+        params: [
+            'INTEGER',
+            'INTEGER'
+        ],
+
+        optimize(params){
+            return {
+                value: (tokenToUseable(params[0]) + tokenToUseable(params[1])).toString(),
+                token: 'INTEGER'
+            }
+        }
+    },
+
+    '-': {
+        params: [
+            'INTEGER',
+            'INTEGER'
+        ],
+
+        optimize(params){
+            return {
+                value: (tokenToUseable(params[0]) - tokenToUseable(params[1])).toString(),
+                token: 'INTEGER'
+            }
+        }
+    },
+
+    '*': {
+        params: [
+            'INTEGER',
+            'INTEGER'
+        ],
+
+        optimize(params){
+            return {
+                value: (tokenToUseable(params[0]) * tokenToUseable(params[1])).toString(),
+                token: 'INTEGER'
+            }
+        }
+    },
+
+    '/': {
+        params: [
+            'INTEGER',
+            'INTEGER'
+        ],
+
+        optimize(params){
+            return {
+                value: (tokenToUseable(params[0]) / tokenToUseable(params[1])).toString(),
+                token: 'FLOAT'
+            }
+        }
+    },
+    
+    '&&': {
+        params: [
+            'BOOLEAN',
+            'BOOLEAN'
+        ],
+
+        optimize(params){
+            return {
+                value: (tokenToUseable(params[0]) && tokenToUseable(params[1])).toString(),
+                token: 'BOOLEAN'
+            }
+        }
+    },
+
+    '||': {
+        params: [
+            'BOOLEAN',
+            'BOOLEAN'
+        ],
+
+        optimize(params){
+            return {
+                value: (tokenToUseable(params[0]) || tokenToUseable(params[1])).toString(),
+                token: 'BOOLEAN'
+            }
+        }
+    },
+
+    '==': {
+        params: [
+            'ANY',
+            'ANY'
+        ],
+
+        optimize(params){
+            if(params[0].token != params[1].token){
+                return {
+                    value: 'false',
+                    token: 'BOOLEAN'
+                }
+            }
+
+            return {
+                value: (tokenToUseable(params[0]) == tokenToUseable(params[1])).toString(),
+                token: 'BOOLEAN'
+            }
+        }
+    },
+
+    '>': {
+        params: [
+            'INTEGER',
+            'INTEGER'
+        ],
+
+        optimize(params){
+            return {
+                value: (tokenToUseable(params[0]) > tokenToUseable(params[1])).toString(),
+                token: 'INTEGER'
+            }
+        }
+    },
+
+    '<': {
+        params: [
+            'INTEGER',
+            'INTEGER'
+        ],
+
+        optimize(params){
+            return {
+                value: (tokenToUseable(params[0]) < tokenToUseable(params[1])).toString(),
+                token: 'INTEGER'
+            }
+        }
+    },
+
+    '>=': {
+        params: [
+            'INTEGER',
+            'INTEGER'
+        ],
+
+        optimize(params){
+            return {
+                value: (tokenToUseable(params[0]) >= tokenToUseable(params[1])).toString(),
+                token: 'INTEGER'
+            }
+        }
+    },
+
+    '<=': {
+        params: [
+            'INTEGER',
+            'INTEGER'
+        ],
+
+        optimize(params){
+            return {
+                value: (tokenToUseable(params[0]) <= tokenToUseable(params[1])).toString(),
+                token: 'INTEGER'
+            }
+        }
+    },
+
+    '!': {
+        params: [
+            'BOOLEAN'
+        ],
+
+        optimize(params){
+            return {
+                value: (!tokenToUseable(params[0])).toString(),
+                token: 'BOOLEAN'
+            }
+        }
+    },
+}
+
+export const dynamicDataTypes = [
+    'MOLANG',
+    'FLAG'
+]
+
+export function isOperationDynamic(operation){
+    const params = operation.value.slice(1)
+
+    for(const i in params){
+        if(dynamicDataTypes.includes(params[i].token)){
+            return true
+        }
+
+        if(params[i].token == 'CALL'){
+            if(getIsFunctionDynamic(params[i].value[0].value)){
+                return true
+            }
+
+            if(isOperationDynamic(params[i].value)){
+                return true
+            }
+        }else if(params[i].token == 'EXPRESSION'){
+            if(isOperationDynamic(params[i].value)){
+                return true
+            }
+        }
+    }
+
+    return false
+}
+
+export function canDoOperation(operation){
+    const params = operation.value.slice(1)
+
+    const operationName = operation.value[0].value
+
+    if(operations[operationName].params.length != params.length){
+        return false
+    }
+
+    let pParams = []
+
+    for(const i in params){
+        pParams.push(params[i].token)
+    }
+
+    for(const i in pParams){
+        if(pParams[i] != operations[operationName].params[i] && !operations[operationName].params[i] == 'ANY'){
+            return false
+        }
+    }
+
+    return true
+}
+
+export function optimizeOperation(operation){
+    const params = operation.value.slice(1)
+
+    const operationName = operation.value[0].value
+
+    return operations[operationName].optimize(params)
+}
+
+export function tokenToUseable(token){
+    if(token.token == 'INTEGER'){
+        return parseInt(token.value)
+    }else if(token.token == 'BOOLEAN'){
+        return token.value == 'true'
+    }else if(token.token == 'STRING'){
+        return token.value
+    }else if(token.token == 'MOLANG'){
+        return token.value
     }
 }

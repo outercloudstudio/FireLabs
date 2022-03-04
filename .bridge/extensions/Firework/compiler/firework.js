@@ -7,6 +7,466 @@
         }
     }
 
+    const functions = {
+        rc: {
+            params: [
+                'STRING'
+            ],
+
+            asEntity (params) {
+                return {
+                    animations: {},
+                    sequence: [
+                        {
+                            run_command: {
+                                command:[
+                                    params[0].value
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+
+            supports: 'entity'
+        },
+
+        move: {
+            params: [
+                'STRING'
+            ],
+
+            asEntity (params) {
+                return {
+                    animations: {},
+                    sequence: [
+                        {
+                            run_command: {
+                                command:[
+                                    'tp ' + params[0].value
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+
+            supports: 'entity'
+        },
+
+        die: {
+            params: [],
+
+            asEntity (params) {
+                return {
+                    animations: {},
+                    sequence: [
+                        {
+                            run_command: {
+                                command:[
+                                    'kill @s'
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+
+            supports: 'entity'
+        },
+
+        say: {
+            params: [
+                'STRING'
+            ],
+
+            asEntity (params) {
+                return {
+                    animations: {},
+                    sequence: [
+                        {
+                            run_command: {
+                                command:[
+                                    'say ' + params[0].value
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+
+            supports: 'entity'
+        },
+
+        rand: {
+            variations: [
+                {
+                    params: [],
+            
+                    asMolang (params) {
+                        return `(math.die_roll_integer(1, 0, 1) == 0)`
+                    },
+
+                    dynamic: true
+                },
+
+                {
+                    params: [
+                        'INTEGER'
+                    ],
+            
+                    asMolang (params) {
+                        return `(math.die_roll_integer(1, 0, ${params[0].value}) == 0)`
+                    },
+
+                    dynamic: true
+                },
+
+                {
+                    params: [
+                        'INTEGER',
+                        'INTEGER'
+                    ],
+            
+                    asMolang (params) {
+                        return `(math.die_roll(1, ${params[0].value}, ${params[1].value}) == 0)`
+                    },
+
+                    dynamic: true
+                }
+            ],
+
+            supports: 'molang'
+        }
+    };
+
+    function doesFunctionExist(name){
+        return functions[name] != undefined
+    }
+
+    function doesFunctionExistWithTemplate(name, template){
+        if(!doesFunctionExist(name)){
+            return false
+        }
+
+        if(doesFunctionHaveVariations(name)){
+            let match = false;
+
+            for(let i = 0; i < functions[name].variations.length; i++){
+                if(doesTemplateMatch(template, functions[name].variations[i].params)){
+                    match = true;
+                }
+            }
+
+            return match
+        }else {
+            return doesTemplateMatch(template, functions[name].params)
+        }
+    }
+
+    function doesFunctionHaveVariations(name){
+        if(!doesFunctionExist(name)){
+            return false
+        }
+
+        return functions[name].variations != undefined
+    }
+
+    function doesTemplateMatch(params, template){
+        let pTemplate = [];
+
+        for(const i in params){
+            pTemplate.push(params[i].token);
+        }
+
+        if(template.length != pTemplate.length){
+            return false
+        }
+
+        for(const i in template){
+            if(pTemplate[i] != template[i]){
+                return false
+            }
+        }
+
+        return true
+    }
+
+    function getIsFunctionDynamic(name, params){
+        if(!doesFunctionExist(name)){
+            console.warn('Function does not exist: ' + name);
+            return null
+        }
+
+        if(!doesFunctionExistWithTemplate(name, params)){
+            console.warn('Function does not exist with template: ' + name);
+            return null
+        }
+
+        if(doesFunctionHaveVariations(name)){
+            for(const i in functions[name].variations){
+                if(doesTemplateMatch(params, functions[name].variations[i].params)){
+                    return functions[name].variations[i].dynamic
+                }
+            }
+        }else {
+            if(doesTemplateMatch(params, functions[name].params)){
+                return functions[name].dynamic
+            }
+        }
+    }
+
+    const operations = {
+        '+': {
+            params: [
+                'INTEGER',
+                'INTEGER'
+            ],
+
+            optimize(params){
+                return {
+                    value: (tokenToUseable(params[0]) + tokenToUseable(params[1])).toString(),
+                    token: 'INTEGER'
+                }
+            }
+        },
+
+        '-': {
+            params: [
+                'INTEGER',
+                'INTEGER'
+            ],
+
+            optimize(params){
+                return {
+                    value: (tokenToUseable(params[0]) - tokenToUseable(params[1])).toString(),
+                    token: 'INTEGER'
+                }
+            }
+        },
+
+        '*': {
+            params: [
+                'INTEGER',
+                'INTEGER'
+            ],
+
+            optimize(params){
+                return {
+                    value: (tokenToUseable(params[0]) * tokenToUseable(params[1])).toString(),
+                    token: 'INTEGER'
+                }
+            }
+        },
+
+        '/': {
+            params: [
+                'INTEGER',
+                'INTEGER'
+            ],
+
+            optimize(params){
+                return {
+                    value: (tokenToUseable(params[0]) / tokenToUseable(params[1])).toString(),
+                    token: 'FLOAT'
+                }
+            }
+        },
+        
+        '&&': {
+            params: [
+                'BOOLEAN',
+                'BOOLEAN'
+            ],
+
+            optimize(params){
+                return {
+                    value: (tokenToUseable(params[0]) && tokenToUseable(params[1])).toString(),
+                    token: 'BOOLEAN'
+                }
+            }
+        },
+
+        '||': {
+            params: [
+                'BOOLEAN',
+                'BOOLEAN'
+            ],
+
+            optimize(params){
+                return {
+                    value: (tokenToUseable(params[0]) || tokenToUseable(params[1])).toString(),
+                    token: 'BOOLEAN'
+                }
+            }
+        },
+
+        '==': {
+            params: [
+                'ANY',
+                'ANY'
+            ],
+
+            optimize(params){
+                if(params[0].token != params[1].token){
+                    return {
+                        value: 'false',
+                        token: 'BOOLEAN'
+                    }
+                }
+
+                return {
+                    value: (tokenToUseable(params[0]) == tokenToUseable(params[1])).toString(),
+                    token: 'BOOLEAN'
+                }
+            }
+        },
+
+        '>': {
+            params: [
+                'INTEGER',
+                'INTEGER'
+            ],
+
+            optimize(params){
+                return {
+                    value: (tokenToUseable(params[0]) > tokenToUseable(params[1])).toString(),
+                    token: 'INTEGER'
+                }
+            }
+        },
+
+        '<': {
+            params: [
+                'INTEGER',
+                'INTEGER'
+            ],
+
+            optimize(params){
+                return {
+                    value: (tokenToUseable(params[0]) < tokenToUseable(params[1])).toString(),
+                    token: 'INTEGER'
+                }
+            }
+        },
+
+        '>=': {
+            params: [
+                'INTEGER',
+                'INTEGER'
+            ],
+
+            optimize(params){
+                return {
+                    value: (tokenToUseable(params[0]) >= tokenToUseable(params[1])).toString(),
+                    token: 'INTEGER'
+                }
+            }
+        },
+
+        '<=': {
+            params: [
+                'INTEGER',
+                'INTEGER'
+            ],
+
+            optimize(params){
+                return {
+                    value: (tokenToUseable(params[0]) <= tokenToUseable(params[1])).toString(),
+                    token: 'INTEGER'
+                }
+            }
+        },
+
+        '!': {
+            params: [
+                'BOOLEAN'
+            ],
+
+            optimize(params){
+                return {
+                    value: (!tokenToUseable(params[0])).toString(),
+                    token: 'BOOLEAN'
+                }
+            }
+        },
+    };
+
+    const dynamicDataTypes = [
+        'MOLANG',
+        'FLAG'
+    ];
+
+    function isOperationDynamic(operation){
+        const params = operation.value.slice(1);
+
+        for(const i in params){
+            if(dynamicDataTypes.includes(params[i].token)){
+                return true
+            }
+
+            if(params[i].token == 'CALL'){
+                if(getIsFunctionDynamic(params[i].value[0].value)){
+                    return true
+                }
+
+                if(isOperationDynamic(params[i].value)){
+                    return true
+                }
+            }else if(params[i].token == 'EXPRESSION'){
+                if(isOperationDynamic(params[i].value)){
+                    return true
+                }
+            }
+        }
+
+        return false
+    }
+
+    function canDoOperation(operation){
+        const params = operation.value.slice(1);
+
+        const operationName = operation.value[0].value;
+
+        if(operations[operationName].params.length != params.length){
+            return false
+        }
+
+        let pParams = [];
+
+        for(const i in params){
+            pParams.push(params[i].token);
+        }
+
+        for(const i in pParams){
+            if(pParams[i] != operations[operationName].params[i] && !operations[operationName].params[i] == 'ANY'){
+                return false
+            }
+        }
+
+        return true
+    }
+
+    function optimizeOperation(operation){
+        const params = operation.value.slice(1);
+
+        const operationName = operation.value[0].value;
+
+        return operations[operationName].optimize(params)
+    }
+
+    function tokenToUseable(token){
+        if(token.token == 'INTEGER'){
+            return parseInt(token.value)
+        }else if(token.token == 'BOOLEAN'){
+            return token.value == 'true'
+        }else if(token.token == 'STRING'){
+            return token.value
+        }else if(token.token == 'MOLANG'){
+            return token.value
+        }
+    }
+
     /*
         Type Routes:
 
@@ -60,7 +520,7 @@
         function searchForDyncamicFlags(tree){
             for(let i = 0; i < tree.length; i++){
                 if(tree[i].token == 'ASSIGN'){
-                    if(tree[i].value[0].value == 'dyn'){
+                    if(tree[i].value[0].value == 'dyn' && tree[i].value[1].token == 'KEYWORD'){
                         if(dynamicFlags[tree[i].value[1].value]){
                             return new Error(`Dynamic flag '${tree[i].value[1].value}' already exists!`)
                         }
@@ -109,9 +569,9 @@
             }else {
                 for(let i = 0; i < tree.length; i++){
                     if(tree[i].token == 'ASSIGN'){
-                        if(tree[i].value[0].value == 'FLAG'){
-                            if(tree[i].value[2].token != 'BOOLEAN'){
-                                return new Error(`fFlag '${tree[i].value[1].value}' can only be assigned to a boolean value! It was assigned to '${tree[i].value[2].token}'.`)
+                        if(tree[i].value[0].token == 'FLAG'){
+                            if(tree[i].value[1].token != 'BOOLEAN'){
+                                return new Error(`fFlag '${tree[i].value[0].value}' can only be assigned to a boolean value! It was assigned to '${tree[i].value[1].token}'.`)
                             }
 
                             let deep = indexFlag(tree[i].value[1].value);
@@ -190,9 +650,147 @@
         if(deep instanceof Error){
             return deep
         }
-
-        console.log(functions);
         //#endregion
+
+        //#region NOTE: Expression Optimization
+        function optimizeExpression(expression){
+            const params = expression.value.slice(1);
+
+            for(let i = 0; i < params.length; i++){
+                if(params[i].token == 'EXPRESSION'){
+                    params[i] = optimizeExpression(params[i]);
+
+                    if(params[i] instanceof Error){
+                        return params[i]
+                    }
+
+                    expression.value[i + 1] = params[i];
+                }else if(params[i].token == 'CALL'){
+                    const cParams = params[i].value.slice(1);
+
+                    for(let j = 0; j < cParams.length; j++){
+                        if(cParams[j].token == 'EXPRESSION'){
+                            cParams[j] = optimizeExpression(cParams[j]);
+
+                            if(cParams[j] instanceof Error){
+                                return cParams[j] 
+                            }
+            
+                            expression.value[i + 1].value[j + 1] = cParams[j]; 
+                        }
+                    }
+                }
+            }
+
+            let canBeOptimized = true;
+
+            for(let i = 0; i < params.length; i++){
+                if(params[i].token == 'EXPRESSION'){
+                    canBeOptimized = false;
+                }
+            }
+
+            if(!canBeOptimized) return expression
+
+            expression.dynamic = isOperationDynamic(expression);
+
+            if(expression.dynamic) return expression
+
+            if(!canDoOperation(expression)){
+                let pTypes = [];
+
+                for(let i = 0; i < params.length; i++){
+                    pTypes.push(params[i].token);
+                }
+
+                return new Error(`Can not do operation ${expression.value[0].value} between types ${pTypes.toString()}!`)
+            }
+
+            return optimizeOperation(expression)
+        }
+
+        function searchForExpressions(tree){
+            for(let i = 0; i < tree.length; i++){
+                if(tree[i].token == 'ASSIGN'){
+                    if(tree[i].value[0].value == 'dyn' && tree[i].value[1].token == 'KEYWORD');else {
+                        if(tree[i].value[1].token == 'EXPRESSION'){
+                            let deep = optimizeExpression(tree[i].value[1]);
+
+                            if(deep instanceof Error){
+                                return deep
+                            }
+
+                            tree[i].value[1] = deep;
+                        }
+                    }
+                }else if(tree[i].token == 'DEFINITION'){
+                    let deep = searchForExpressions(tree[i].value[1].value);
+
+                    if(deep instanceof Error){
+                        return deep
+                    }
+                }else if(tree[i].token == 'IF'){
+                    let deep = undefined;
+
+                    if(tree[i].value[0].token == 'EXPRESSION'){
+                        deep = optimizeExpression(tree[i].value[0]);
+
+                        if(deep instanceof Error){
+                            return deep
+                        }
+
+                        tree[i].value[0] = deep;
+                    }
+
+                    deep = searchForExpressions(tree[i].value[1].value);
+
+                    if(deep instanceof Error){
+                        return deep
+                    }
+                }else if(tree[i].token == 'DELAY'){
+                    let deep = undefined;
+
+                    if(tree[i].value[0].token == 'EXPRESSION'){
+                        optimizeExpression(tree[i].value[0]);
+
+                        if(deep instanceof Error){
+                            return deep
+                        }
+
+                        tree[i].value[0] = deep;
+                    }
+
+                    deep = searchForExpressions(tree[i].value[1].value);
+
+                    if(deep instanceof Error){
+                        return deep
+                    }
+                }else if(tree[i].token == 'CALL'){
+                    let params = tree[i].value.slice(1);
+
+                    for(let j = 0; j < params.length; j++){
+                        if(params[j].token == 'EXPRESSION'){
+                            let deep = optimizeExpression(params[j]);
+
+                            if(deep instanceof Error){
+                                return deep
+                            }
+
+                            tree[i].value[j + 1] = deep;
+                        }
+                    }
+                }
+            }
+        }
+
+        deep = searchForExpressions(tree);
+
+        if(deep instanceof Error){
+            return deep
+        }
+        //#endregion
+
+        console.log(tree);
 
         return {
             animations: outAnimations,

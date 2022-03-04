@@ -54,7 +54,7 @@ export function Compile(tree, config, source){
     function searchForDyncamicFlags(tree){
         for(let i = 0; i < tree.length; i++){
             if(tree[i].token == 'ASSIGN'){
-                if(tree[i].value[0].value == 'dyn'){
+                if(tree[i].value[0].value == 'dyn' && tree[i].value[1].token == 'KEYWORD'){
                     if(dynamicFlags[tree[i].value[1].value]){
                         return new Backend.Error(`Dynamic flag '${tree[i].value[1].value}' already exists!`)
                     }
@@ -103,9 +103,9 @@ export function Compile(tree, config, source){
         }else{
             for(let i = 0; i < tree.length; i++){
                 if(tree[i].token == 'ASSIGN'){
-                    if(tree[i].value[0].value == 'FLAG'){
-                        if(tree[i].value[2].token != 'BOOLEAN'){
-                            return new Backend.Error(`fFlag '${tree[i].value[1].value}' can only be assigned to a boolean value! It was assigned to '${tree[i].value[2].token}'.`)
+                    if(tree[i].value[0].token == 'FLAG'){
+                        if(tree[i].value[1].token != 'BOOLEAN'){
+                            return new Backend.Error(`fFlag '${tree[i].value[0].value}' can only be assigned to a boolean value! It was assigned to '${tree[i].value[1].token}'.`)
                         }
 
                         let deep = indexFlag(tree[i].value[1].value)
@@ -184,9 +184,149 @@ export function Compile(tree, config, source){
     if(deep instanceof Backend.Error){
         return deep
     }
-
-    console.log(functions)
     //#endregion
+
+    //#region NOTE: Expression Optimization
+    function optimizeExpression(expression){
+        const params = expression.value.slice(1)
+
+        for(let i = 0; i < params.length; i++){
+            if(params[i].token == 'EXPRESSION'){
+                params[i] = optimizeExpression(params[i])
+
+                if(params[i] instanceof Backend.Error){
+                    return params[i]
+                }
+
+                expression.value[i + 1] = params[i]
+            }else if(params[i].token == 'CALL'){
+                const cParams = params[i].value.slice(1)
+
+                for(let j = 0; j < cParams.length; j++){
+                    if(cParams[j].token == 'EXPRESSION'){
+                        cParams[j] = optimizeExpression(cParams[j])
+
+                        if(cParams[j] instanceof Backend.Error){
+                            return cParams[j] 
+                        }
+        
+                        expression.value[i + 1].value[j + 1] = cParams[j] 
+                    }
+                }
+            }
+        }
+
+        let canBeOptimized = true
+
+        for(let i = 0; i < params.length; i++){
+            if(params[i].token == 'EXPRESSION'){
+                canBeOptimized = false
+            }
+        }
+
+        if(!canBeOptimized) return expression
+
+        expression.dynamic = Native.isOperationDynamic(expression)
+
+        if(expression.dynamic) return expression
+
+        if(!Native.canDoOperation(expression)){
+            let pTypes = []
+
+            for(let i = 0; i < params.length; i++){
+                pTypes.push(params[i].token)
+            }
+
+            return new Backend.Error(`Can not do operation ${expression.value[0].value} between types ${pTypes.toString()}!`)
+        }
+
+        return Native.optimizeOperation(expression)
+    }
+
+    function searchForExpressions(tree){
+        for(let i = 0; i < tree.length; i++){
+            if(tree[i].token == 'ASSIGN'){
+                if(tree[i].value[0].value == 'dyn' && tree[i].value[1].token == 'KEYWORD'){
+                    
+                }else{
+                    if(tree[i].value[1].token == 'EXPRESSION'){
+                        let deep = optimizeExpression(tree[i].value[1])
+
+                        if(deep instanceof Backend.Error){
+                            return deep
+                        }
+
+                        tree[i].value[1] = deep
+                    }
+                }
+            }else if(tree[i].token == 'DEFINITION'){
+                let deep = searchForExpressions(tree[i].value[1].value)
+
+                if(deep instanceof Backend.Error){
+                    return deep
+                }
+            }else if(tree[i].token == 'IF'){
+                let deep = undefined
+
+                if(tree[i].value[0].token == 'EXPRESSION'){
+                    deep = optimizeExpression(tree[i].value[0])
+
+                    if(deep instanceof Backend.Error){
+                        return deep
+                    }
+
+                    tree[i].value[0] = deep
+                }
+
+                deep = searchForExpressions(tree[i].value[1].value)
+
+                if(deep instanceof Backend.Error){
+                    return deep
+                }
+            }else if(tree[i].token == 'DELAY'){
+                let deep = undefined
+
+                if(tree[i].value[0].token == 'EXPRESSION'){
+                    optimizeExpression(tree[i].value[0])
+
+                    if(deep instanceof Backend.Error){
+                        return deep
+                    }
+
+                    tree[i].value[0] = deep
+                }
+
+                deep = searchForExpressions(tree[i].value[1].value)
+
+                if(deep instanceof Backend.Error){
+                    return deep
+                }
+            }else if(tree[i].token == 'CALL'){
+                let params = tree[i].value.slice(1)
+
+                for(let j = 0; j < params.length; j++){
+                    if(params[j].token == 'EXPRESSION'){
+                        let deep = optimizeExpression(params[j])
+
+                        if(deep instanceof Backend.Error){
+                            return deep
+                        }
+
+                        tree[i].value[j + 1] = deep
+                    }
+                }
+            }
+        }
+    }
+
+    deep = searchForExpressions(tree)
+
+    if(deep instanceof Backend.Error){
+        return deep
+    }
+    //#endregion
+
+    console.log(tree)
 
     return {
         animations: outAnimations,

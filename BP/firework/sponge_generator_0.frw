@@ -1,7 +1,7 @@
 dyn aboveSeaLevel = ?"q.position(0) >= 64"
 
 func place => {
-    if(rand() || rand() || rand() || aboveSeaLevel) => {
+    if(rand(2 + 3) || rand() || rand() || aboveSeaLevel) => {
         rc("tp ~ ~0.5 ~")
         rc("execute @e[tag=sg, x=~, y=~-0.5, z=~, dx=0, dy=0, dz=0] ~ ~ ~ kill @e[tag=sg, x=~, y=~0.5, z=~, dx=0, dy=0, dz=0]")
 
