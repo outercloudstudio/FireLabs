@@ -21,6 +21,8 @@
         Codeblock -> Ifs / Delays / Assignments / Native Methods / Defined Methods
 
         Expression -> Name / Native Methods / Expression
+
+        Call -> Name | -> Expression*
     */
 
     function Compile(tree, config, source){
@@ -78,10 +80,98 @@
         if(deep instanceof Error){
             return deep
         }
-
-        console.log(dynamicFlags);
         //#endregion
 
+        //#region NOTE: Dynamic Value Init - Index Flags
+        let flags = {};
+
+        function indexFlag(name){
+            flags[name] = {};
+        }
+
+        function searchForFlags(tree){
+            if(tree.token == 'EXPRESSION'){
+                for(let i = 0; i < tree.value.length; i++){
+                    if(tree.value[i].token == 'EXPRESSION'){
+                        let deep = searchForFlags(tree.value[i]);
+
+                        if(deep instanceof Error){
+                            return deep
+                        }
+                    }else if(tree.value[i].token == 'FLAG'){
+                        let deep = indexFlag(tree.value[i].value);
+
+                        if(deep instanceof Error){
+                            return deep
+                        }
+                    }
+                }
+            }else {
+                for(let i = 0; i < tree.length; i++){
+                    if(tree[i].token == 'ASSIGN'){
+                        if(tree[i].value[0].value == 'FLAG'){
+                            if(tree[i].value[2].token != 'BOOLEAN'){
+                                return new Error(`fFlag '${tree[i].value[1].value}' can only be assigned to a boolean value! It was assigned to '${tree[i].value[2].token}'.`)
+                            }
+
+                            let deep = indexFlag(tree[i].value[1].value);
+
+                            if(deep instanceof Error){
+                                return deep
+                            }
+                        }
+                    }else if(tree[i].token == 'DEFINITION'){
+                        let deep = searchForFlags(tree[i].value[1].value);
+
+                        if(deep instanceof Error){
+                            return deep
+                        }
+                    }else if(tree[i].token == 'IF'){
+                        let deep = searchForFlags(tree[i].value[0]);
+
+                        if(deep instanceof Error){
+                            return deep
+                        }
+
+                        deep = searchForFlags(tree[i].value[1].value);
+
+                        if(deep instanceof Error){
+                            return deep
+                        }
+                    }else if(tree[i].token == 'DELAY'){
+                        let deep = searchForFlags(tree[i].value[1].value);
+
+                        if(deep instanceof Error){
+                            return deep
+                        }
+                    }else if(tree[i].token == 'CALL'){
+                        let params = tree[i].value.slice(1);
+
+                        for(let j = 0; j < params.length; j++){
+                            if(params[j].token == 'FLAG'){
+                                indexFlag(params[j].value);
+                            }else if(params[j].token == 'EXPRESSION'){
+                                let deep = searchForFlags(params[j]);
+
+                                if(deep instanceof Error){
+                                    return deep
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        deep = searchForFlags(tree);
+
+        if(deep instanceof Error){
+            return deep
+        }
+
+        console.log(flags);
+        //#endregion
+        
         return {
             animations: outAnimations,
             entity: worldRuntime

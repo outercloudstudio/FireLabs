@@ -66,4 +66,8 @@ func move => {
 
 func start =>{
     fall()
+
+    { 
+        fall()
+    }
 }
