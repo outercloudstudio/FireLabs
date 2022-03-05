@@ -536,20 +536,44 @@
         console.log(token);
 
         if(token.token == 'INTEGER'){
-            return token.value
+            console.log('TTM: ' + token.value);
+            return {
+                value: token.value,
+                token: 'MOLANG'
+            }
         }else if(token.token == 'BOOLEAN'){
             if(token.value == 'true'){
-                return '1'
+                console.log('TTM: 1');
+                return {
+                    value: '1',
+                    token: 'MOLANG'
+                }
             }else {
-                return '0'
+                console.log('TTM: 0');
+                return {
+                    value: '0',
+                    token: 'MOLANG'
+                }
             }
         }else if(token.token == 'STRING'){
-            return '\'' + token.value + '\''
+            console.log('TTM: \'' + token.value + '\'');
+            return {
+                value: '\'' + token.value + '\'',
+                token: 'MOLANG'
+            }
         }else if(token.token == 'MOLANG'){
-            return token.value
+            console.log('TTM: ' + token.value);
+            return {
+                value: token.value,
+                token: 'MOLANG'
+            }
         }
 
-        return 'idk'
+        console.log('TTM: idk');
+        return {
+            value: 'idk',
+            token: 'MOLANG'
+        }
     }
 
     function operationToMolang(operation){
@@ -560,6 +584,8 @@
 
         const operationName = operation.value[0].value;
 
+        console.log('OTML ' + operations[operationName].toMolang(params));
+
         return operations[operationName].toMolang(params)
     }
 
@@ -569,12 +595,14 @@
 
         const params = expression.value.slice(1);
 
-        for(const i in params){
+        for(let i = 0; i < params.length; i++){
             if(params[i].token == 'EXPRESSION'){
                 expression.value[i + 1] = expressionToMolang(params[i]);
             }else if(params[i].token == 'CALL'){
                 const cParams = params[i].value.slice(1);
                 const cName = params[i].value[0].value;
+
+                console.log('CALL TO M: ' + cName);
 
                 expression.value[i + 1] = functions[cName].toMolang(cParams);
             }else {
@@ -584,6 +612,7 @@
 
         console.log('Now going to oper to m');
         console.log(expression);
+        console.log(operationToMolang(JSON.parse(JSON.stringify(expression))));
 
         return {
             value: operationToMolang(expression),
