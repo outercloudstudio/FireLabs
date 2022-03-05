@@ -54,7 +54,7 @@ export function Compile(tree, config, source){
     function searchForDyncamicFlags(tree){
         for(let i = 0; i < tree.length; i++){
             if(tree[i].token == 'ASSIGN'){
-                if(tree[i].value[0].value == 'dyn' && tree[i].value[1].token == 'KEYWORD'){
+                if(tree[i].value[0].value == 'dyn' && tree[i].value[0].token == 'KEYWORD'){
                     if(dynamicFlags[tree[i].value[1].value]){
                         return new Backend.Error(`Dynamic flag '${tree[i].value[1].value}' already exists!`)
                     }
@@ -326,7 +326,60 @@ export function Compile(tree, config, source){
     }
     //#endregion
 
-    console.log(tree)
+    //#region NOTE: Index Dynamic Values
+    let dynamicValues = {}
+
+    function indexDynamicValues(name, expression){
+        dynamicValues[name] = expression
+    }
+
+    function searchForDyncamicValues(tree){
+        for(let i = 0; i < tree.length; i++){
+            if(tree[i].token == 'DEFINITION'){
+                let deep = searchForDyncamicValues(tree[i].value[1].value)
+
+                if(deep instanceof Backend.Error){
+                    return deep
+                }
+            }else if(tree[i].token == 'IF'){
+                indexDynamicValues(Backend.uuidv4(), tree[i].value[0])
+
+                deep = searchForDyncamicValues(tree[i].value[1].value)
+
+                if(deep instanceof Backend.Error){
+                    return deep
+                }
+            }else if(tree[i].token == 'DELAY'){
+                let deep = searchForDyncamicValues(tree[i].value[1].value)
+
+                if(deep instanceof Backend.Error){
+                    return deep
+                }
+            }
+        }
+    }
+
+    deep = searchForDyncamicValues(tree)
+
+    if(deep instanceof Backend.Error){
+        return deep
+    }
+
+    const dynamicFlagNames = Object.keys(dynamicFlags)
+
+    for(const i in dynamicFlagNames){
+        const name = dynamicFlagNames[i]
+
+        if(!(name in dynamicValues)){
+            dynamicValues[name] = {
+                value: dynamicFlags[name],
+                token: 'MOLANG'
+            }
+        }
+    }
+    //#endregion
+    
+    
 
     return {
         animations: outAnimations,

@@ -7,6 +7,22 @@
         }
     }
 
+    function uuidv4(){
+        let d = new Date().getTime(),
+        d2 = (performance && performance.now && (performance.now() * 1000)) || 0;
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+            let r = Math.random() * 16;
+            if (d > 0) {
+            r = (d + r) % 16 | 0;
+            d = Math.floor(d / 16);
+            } else {
+            r = (d2 + r) % 16 | 0;
+            d2 = Math.floor(d2 / 16);
+            }
+            return (c == 'x' ? r : (r & 0x7 | 0x8)).toString(16)
+        })
+    }
+
     const functions = {
         rc: {
             params: [
@@ -520,7 +536,7 @@
         function searchForDyncamicFlags(tree){
             for(let i = 0; i < tree.length; i++){
                 if(tree[i].token == 'ASSIGN'){
-                    if(tree[i].value[0].value == 'dyn' && tree[i].value[1].token == 'KEYWORD'){
+                    if(tree[i].value[0].value == 'dyn' && tree[i].value[0].token == 'KEYWORD'){
                         if(dynamicFlags[tree[i].value[1].value]){
                             return new Error(`Dynamic flag '${tree[i].value[1].value}' already exists!`)
                         }
@@ -790,7 +806,60 @@
         }
         //#endregion
 
-        console.log(tree);
+        //#region NOTE: Index Dynamic Values
+        let dynamicValues = {};
+
+        function indexDynamicValues(name, expression){
+            dynamicValues[name] = expression;
+        }
+
+        function searchForDyncamicValues(tree){
+            for(let i = 0; i < tree.length; i++){
+                if(tree[i].token == 'DEFINITION'){
+                    let deep = searchForDyncamicValues(tree[i].value[1].value);
+
+                    if(deep instanceof Error){
+                        return deep
+                    }
+                }else if(tree[i].token == 'IF'){
+                    indexDynamicValues(uuidv4(), tree[i].value[0]);
+
+                    deep = searchForDyncamicValues(tree[i].value[1].value);
+
+                    if(deep instanceof Error){
+                        return deep
+                    }
+                }else if(tree[i].token == 'DELAY'){
+                    let deep = searchForDyncamicValues(tree[i].value[1].value);
+
+                    if(deep instanceof Error){
+                        return deep
+                    }
+                }
+            }
+        }
+
+        deep = searchForDyncamicValues(tree);
+
+        if(deep instanceof Error){
+            return deep
+        }
+
+        const dynamicFlagNames = Object.keys(dynamicFlags);
+
+        for(const i in dynamicFlagNames){
+            const name = dynamicFlagNames[i];
+
+            if(!(name in dynamicValues)){
+                dynamicValues[name] = {
+                    value: dynamicFlags[name],
+                    token: 'MOLANG'
+                };
+            }
+        }
+        //#endregion
+        
+        
 
         return {
             animations: outAnimations,
