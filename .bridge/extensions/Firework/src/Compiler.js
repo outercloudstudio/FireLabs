@@ -331,6 +331,11 @@ export function Compile(tree, config, source){
 
     function indexDynamicValues(name, expression){
         dynamicValues[name] = expression
+
+        return {
+            value: name,
+            token: 'DYNAMIC VALUE'
+        }
     }
 
     function searchForDyncamicValues(tree){
@@ -342,7 +347,7 @@ export function Compile(tree, config, source){
                     return deep
                 }
             }else if(tree[i].token == 'IF'){
-                indexDynamicValues(Backend.uuidv4(), tree[i].value[0])
+                tree[i].value[0] = indexDynamicValues(Backend.uuidv4(), tree[i].value[0])
 
                 deep = searchForDyncamicValues(tree[i].value[1].value)
 
@@ -379,7 +384,7 @@ export function Compile(tree, config, source){
     }
     //#endregion
     
-    
+    console.log(tree)
 
     return {
         animations: outAnimations,

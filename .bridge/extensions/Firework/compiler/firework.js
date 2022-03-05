@@ -811,6 +811,11 @@
 
         function indexDynamicValues(name, expression){
             dynamicValues[name] = expression;
+
+            return {
+                value: name,
+                token: 'DYNAMIC VALUE'
+            }
         }
 
         function searchForDyncamicValues(tree){
@@ -822,7 +827,7 @@
                         return deep
                     }
                 }else if(tree[i].token == 'IF'){
-                    indexDynamicValues(uuidv4(), tree[i].value[0]);
+                    tree[i].value[0] = indexDynamicValues(uuidv4(), tree[i].value[0]);
 
                     deep = searchForDyncamicValues(tree[i].value[1].value);
 
@@ -859,7 +864,7 @@
         }
         //#endregion
         
-        
+        console.log(tree);
 
         return {
             animations: outAnimations,
