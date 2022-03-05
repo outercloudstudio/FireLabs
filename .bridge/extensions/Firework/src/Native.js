@@ -109,7 +109,7 @@ export const functions = {
                 ],
         
                 asMolang (params) {
-                    return `(math.die_roll_integer(1, 0, ${params[0].value}) == 0)`
+                    return `(math.die_roll_integer(1, 0, ${tokenToMolang(params[0])}) == 0)`
                 },
 
                 dynamic: true
@@ -122,7 +122,7 @@ export const functions = {
                 ],
         
                 asMolang (params) {
-                    return `(math.die_roll(1, ${params[0].value}, ${params[1].value}) == 0)`
+                    return `(math.die_roll(1, ${tokenToMolang(params[0])}, ${tokenToMolang(params[1])}) == 0)`
                 },
 
                 dynamic: true
@@ -273,6 +273,10 @@ export const operations = {
                 value: (tokenToUseable(params[0]) + tokenToUseable(params[1])).toString(),
                 token: 'INTEGER'
             }
+        },
+
+        toMolang(params){
+            return `${params[0].value} + ${params[1].value}`
         }
     },
 
@@ -287,6 +291,10 @@ export const operations = {
                 value: (tokenToUseable(params[0]) - tokenToUseable(params[1])).toString(),
                 token: 'INTEGER'
             }
+        },
+
+        toMolang(params){
+            return `${params[0].value} - ${params[1].value}`
         }
     },
 
@@ -301,6 +309,10 @@ export const operations = {
                 value: (tokenToUseable(params[0]) * tokenToUseable(params[1])).toString(),
                 token: 'INTEGER'
             }
+        },
+
+        toMolang(params){
+            return `${params[0].value} * ${params[1].value}`
         }
     },
 
@@ -315,6 +327,10 @@ export const operations = {
                 value: (tokenToUseable(params[0]) / tokenToUseable(params[1])).toString(),
                 token: 'FLOAT'
             }
+        },
+
+        toMolang(params){
+            return `${params[0].value} / ${params[1].value}`
         }
     },
     
@@ -329,6 +345,10 @@ export const operations = {
                 value: (tokenToUseable(params[0]) && tokenToUseable(params[1])).toString(),
                 token: 'BOOLEAN'
             }
+        },
+
+        toMolang(params){
+            return `${params[0].value} && ${params[1].value}`
         }
     },
 
@@ -343,6 +363,10 @@ export const operations = {
                 value: (tokenToUseable(params[0]) || tokenToUseable(params[1])).toString(),
                 token: 'BOOLEAN'
             }
+        },
+
+        toMolang(params){
+            return `${params[0].value} || ${params[1].value}`
         }
     },
 
@@ -364,6 +388,10 @@ export const operations = {
                 value: (tokenToUseable(params[0]) == tokenToUseable(params[1])).toString(),
                 token: 'BOOLEAN'
             }
+        },
+
+        toMolang(params){
+            return `${params[0].value} == ${params[1].value}`
         }
     },
 
@@ -378,6 +406,10 @@ export const operations = {
                 value: (tokenToUseable(params[0]) > tokenToUseable(params[1])).toString(),
                 token: 'INTEGER'
             }
+        },
+
+        toMolang(params){
+            return `${params[0].value} > ${params[1].value}`
         }
     },
 
@@ -392,6 +424,10 @@ export const operations = {
                 value: (tokenToUseable(params[0]) < tokenToUseable(params[1])).toString(),
                 token: 'INTEGER'
             }
+        },
+
+        toMolang(params){
+            return `${params[0].value} < ${params[1].value}`
         }
     },
 
@@ -406,6 +442,10 @@ export const operations = {
                 value: (tokenToUseable(params[0]) >= tokenToUseable(params[1])).toString(),
                 token: 'INTEGER'
             }
+        },
+
+        toMolang(params){
+            return `${params[0].value} >= ${params[1].value}`
         }
     },
 
@@ -420,6 +460,10 @@ export const operations = {
                 value: (tokenToUseable(params[0]) <= tokenToUseable(params[1])).toString(),
                 token: 'INTEGER'
             }
+        },
+
+        toMolang(params){
+            return `${params[0].value} <= ${params[1].value}`
         }
     },
 
@@ -433,6 +477,10 @@ export const operations = {
                 value: (!tokenToUseable(params[0])).toString(),
                 token: 'BOOLEAN'
             }
+        },
+
+        toMolang(params){
+            return `!${params[0].value}`
         }
     },
 }
@@ -509,5 +557,65 @@ export function tokenToUseable(token){
         return token.value
     }else if(token.token == 'MOLANG'){
         return token.value
+    }
+}
+
+export function tokenToMolang(token){
+    console.log('TOKEN TO MOLANG')
+    console.log(token)
+
+    if(token.token == 'INTEGER'){
+        return token.value
+    }else if(token.token == 'BOOLEAN'){
+        if(token.value == 'true'){
+            return '1'
+        }else{
+            return '0'
+        }
+    }else if(token.token == 'STRING'){
+        return '\'' + token.value + '\''
+    }else if(token.token == 'MOLANG'){
+        return token.value
+    }
+
+    return 'idk'
+}
+
+export function operationToMolang(operation){
+    console.log('OPERATION TO MOLANG')
+    console.log(operation)
+
+    const params = operation.value.slice(1)
+
+    const operationName = operation.value[0].value
+
+    return operations[operationName].toMolang(params)
+}
+
+export function expressionToMolang(expression){
+    console.log('Expression to molang')
+    console.log(expression)
+
+    const params = expression.value.slice(1)
+
+    for(const i in params){
+        if(params[i].token == 'EXPRESSION'){
+            expression.value[i + 1] = expressionToMolang(params[i])
+        }else if(params[i].token == 'CALL'){
+            const cParams = params[i].value.slice(1)
+            const cName = params[i].value[0].value
+
+            expression.value[i + 1] = functions[cName].toMolang(cParams)
+        }else{
+            expression.value[i + 1] = tokenToMolang(params[i])
+        }
+    }
+
+    console.log('Now going to oper to m')
+    console.log(expression)
+
+    return {
+        value: operationToMolang(expression),
+        token: 'MOLANG'
     }
 }

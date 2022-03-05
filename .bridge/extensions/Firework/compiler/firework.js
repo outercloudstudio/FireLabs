@@ -132,7 +132,7 @@
                     ],
             
                     asMolang (params) {
-                        return `(math.die_roll_integer(1, 0, ${params[0].value}) == 0)`
+                        return `(math.die_roll_integer(1, 0, ${tokenToMolang(params[0])}) == 0)`
                     },
 
                     dynamic: true
@@ -145,7 +145,7 @@
                     ],
             
                     asMolang (params) {
-                        return `(math.die_roll(1, ${params[0].value}, ${params[1].value}) == 0)`
+                        return `(math.die_roll(1, ${tokenToMolang(params[0])}, ${tokenToMolang(params[1])}) == 0)`
                     },
 
                     dynamic: true
@@ -244,6 +244,10 @@
                     value: (tokenToUseable(params[0]) + tokenToUseable(params[1])).toString(),
                     token: 'INTEGER'
                 }
+            },
+
+            toMolang(params){
+                return `${params[0].value} + ${params[1].value}`
             }
         },
 
@@ -258,6 +262,10 @@
                     value: (tokenToUseable(params[0]) - tokenToUseable(params[1])).toString(),
                     token: 'INTEGER'
                 }
+            },
+
+            toMolang(params){
+                return `${params[0].value} - ${params[1].value}`
             }
         },
 
@@ -272,6 +280,10 @@
                     value: (tokenToUseable(params[0]) * tokenToUseable(params[1])).toString(),
                     token: 'INTEGER'
                 }
+            },
+
+            toMolang(params){
+                return `${params[0].value} * ${params[1].value}`
             }
         },
 
@@ -286,6 +298,10 @@
                     value: (tokenToUseable(params[0]) / tokenToUseable(params[1])).toString(),
                     token: 'FLOAT'
                 }
+            },
+
+            toMolang(params){
+                return `${params[0].value} / ${params[1].value}`
             }
         },
         
@@ -300,6 +316,10 @@
                     value: (tokenToUseable(params[0]) && tokenToUseable(params[1])).toString(),
                     token: 'BOOLEAN'
                 }
+            },
+
+            toMolang(params){
+                return `${params[0].value} && ${params[1].value}`
             }
         },
 
@@ -314,6 +334,10 @@
                     value: (tokenToUseable(params[0]) || tokenToUseable(params[1])).toString(),
                     token: 'BOOLEAN'
                 }
+            },
+
+            toMolang(params){
+                return `${params[0].value} || ${params[1].value}`
             }
         },
 
@@ -335,6 +359,10 @@
                     value: (tokenToUseable(params[0]) == tokenToUseable(params[1])).toString(),
                     token: 'BOOLEAN'
                 }
+            },
+
+            toMolang(params){
+                return `${params[0].value} == ${params[1].value}`
             }
         },
 
@@ -349,6 +377,10 @@
                     value: (tokenToUseable(params[0]) > tokenToUseable(params[1])).toString(),
                     token: 'INTEGER'
                 }
+            },
+
+            toMolang(params){
+                return `${params[0].value} > ${params[1].value}`
             }
         },
 
@@ -363,6 +395,10 @@
                     value: (tokenToUseable(params[0]) < tokenToUseable(params[1])).toString(),
                     token: 'INTEGER'
                 }
+            },
+
+            toMolang(params){
+                return `${params[0].value} < ${params[1].value}`
             }
         },
 
@@ -377,6 +413,10 @@
                     value: (tokenToUseable(params[0]) >= tokenToUseable(params[1])).toString(),
                     token: 'INTEGER'
                 }
+            },
+
+            toMolang(params){
+                return `${params[0].value} >= ${params[1].value}`
             }
         },
 
@@ -391,6 +431,10 @@
                     value: (tokenToUseable(params[0]) <= tokenToUseable(params[1])).toString(),
                     token: 'INTEGER'
                 }
+            },
+
+            toMolang(params){
+                return `${params[0].value} <= ${params[1].value}`
             }
         },
 
@@ -404,6 +448,10 @@
                     value: (!tokenToUseable(params[0])).toString(),
                     token: 'BOOLEAN'
                 }
+            },
+
+            toMolang(params){
+                return `!${params[0].value}`
             }
         },
     };
@@ -483,6 +531,66 @@
         }
     }
 
+    function tokenToMolang(token){
+        console.log('TOKEN TO MOLANG');
+        console.log(token);
+
+        if(token.token == 'INTEGER'){
+            return token.value
+        }else if(token.token == 'BOOLEAN'){
+            if(token.value == 'true'){
+                return '1'
+            }else {
+                return '0'
+            }
+        }else if(token.token == 'STRING'){
+            return '\'' + token.value + '\''
+        }else if(token.token == 'MOLANG'){
+            return token.value
+        }
+
+        return 'idk'
+    }
+
+    function operationToMolang(operation){
+        console.log('OPERATION TO MOLANG');
+        console.log(operation);
+
+        const params = operation.value.slice(1);
+
+        const operationName = operation.value[0].value;
+
+        return operations[operationName].toMolang(params)
+    }
+
+    function expressionToMolang(expression){
+        console.log('Expression to molang');
+        console.log(expression);
+
+        const params = expression.value.slice(1);
+
+        for(const i in params){
+            if(params[i].token == 'EXPRESSION'){
+                expression.value[i + 1] = expressionToMolang(params[i]);
+            }else if(params[i].token == 'CALL'){
+                const cParams = params[i].value.slice(1);
+                const cName = params[i].value[0].value;
+
+                expression.value[i + 1] = functions[cName].toMolang(cParams);
+            }else {
+                expression.value[i + 1] = tokenToMolang(params[i]);
+            }
+        }
+
+        console.log('Now going to oper to m');
+        console.log(expression);
+
+        return {
+            value: operationToMolang(expression),
+            token: 'MOLANG'
+        }
+    }
+
     /*
         Type Routes:
 
@@ -502,7 +610,7 @@
     */
 
     function Compile(tree, config, source){
-        console.log(tree);
+        console.log(JSON.parse(JSON.stringify(tree)));
 
         //#region NOTE: Setup json values for editing
         let worldRuntime = source;
@@ -708,9 +816,7 @@
 
             if(!canBeOptimized) return expression
 
-            expression.dynamic = isOperationDynamic(expression);
-
-            if(expression.dynamic) return expression
+            if(isOperationDynamic(expression)) return expression
 
             if(!canDoOperation(expression)){
                 let pTypes = [];
@@ -862,9 +968,57 @@
                 };
             }
         }
+
+        console.log(JSON.parse(JSON.stringify(tree)));
         //#endregion
         
-        console.log(tree);
+        //#region NOTE: Compile Dynamic Values
+        const dynamicValueNames = Object.keys(dynamicValues);
+        
+        for(const i in dynamicValueNames){
+            const name = dynamicValueNames[i];
+
+            outAnimations['animation.firework.backend.' + name] = {
+                loop: true,
+                timeline: {
+                    '0.0': [
+                        `/tag @s add frwb_dv_${name}`
+                    ]
+                },
+                animation_length: 0.001
+            };
+
+            outAnimations['animation.firework.backend.' + name + '.inverse'] = {
+                loop: true,
+                timeline: {
+                    '0.0': [
+                        `/tag @s remove frwb_dv_${name}`
+                    ]
+                },
+                animation_length: 0.001
+            };
+
+            worldRuntime['minecraft:entity'].description.animations[name] = 'animation.firework.backend.' + name;
+            worldRuntime['minecraft:entity'].description.animations[name + '_inverse'] = 'animation.firework.backend.' + name + '.inverse';
+
+            let scriptData = {};
+
+            console.log(JSON.parse(JSON.stringify(dynamicValues[name])));
+            console.log(expressionToMolang(JSON.parse(JSON.stringify(dynamicValues[name]))));
+
+            scriptData[name] = '';
+
+            worldRuntime['minecraft:entity'].description.scripts.animate.push(scriptData);
+
+            scriptData = {};
+
+            scriptData[name + '_inverse'] = '(' + '' + ') == 0';
+
+            worldRuntime['minecraft:entity'].description.scripts.animate.push(scriptData);
+        }
+        //#endregion
+
+        console.log(JSON.parse(JSON.stringify(tree)));
 
         return {
             animations: outAnimations,
@@ -1848,11 +2002,7 @@
 
     	let outAnimations = {};
 
-    	let dependAnaimtions = {};
-
     	let entitiesToCompile = [];
-
-    	let inDependMode = false;
     	
     	function noErrors(fileContent)
         {
@@ -1902,7 +2052,7 @@
     						const content = JSON.parse(await fO.text());
     						
     						if(content['minecraft:entity'] && content['minecraft:entity'].components){
-    							const components = Object.getOwnPropertyNames(content['minecraft:entity'].components);
+    							const components = Object.keys(content['minecraft:entity'].components);
 
     							let requiredScripts = [];
 
@@ -1926,7 +2076,7 @@
 
     				const diffScripts = [];
 
-    				const indexedScripts = Object.getOwnPropertyNames(newScripts);
+    				const indexedScripts = Object.keys(newScripts);
 
     				for(const script of indexedScripts){
     					if(!scripts[script]){
@@ -1951,7 +2101,7 @@
     				//console.log('Got Diff Scripts:')
     				//console.log(diffScripts)
 
-    				const entityDependsKeys = Object.getOwnPropertyNames(entityDepends);
+    				const entityDependsKeys = Object.keys(entityDepends);
 
     				for(const entity of entityDependsKeys){
     					const entityDependsValue = entityDepends[entity];
@@ -1978,7 +2128,7 @@
     				//console.log('Transforming ' + filePath)
 
     				if(fileContent['minecraft:entity'] && fileContent['minecraft:entity'].components){
-    					const components = Object.getOwnPropertyNames(fileContent['minecraft:entity'].components);
+    					const components = Object.keys(fileContent['minecraft:entity'].components);
 
     					let requiredScripts = [];
 
@@ -2015,33 +2165,10 @@
     									throw compiled.message
     								}
 
-    								let animations = Object.getOwnPropertyNames(compiled.animations);
-
-    								let outBPPath = 'development_behavior_packs/' + projectRoot.split('/')[1] + ' BP/';
-
-    								if(!inDependMode){
-    									dependAnaimtions[filePath] = animations;
-    								}else {
-    									if(dependAnaimtions[filePath]){
-    										for(const animation of dependAnaimtions[filePath]){
-    											//console.log('Removing anim in depend mode: ' + animation)
-
-    											try{
-    												outputFileSystem.unlink(outBPPath + 'animations/' + animation);
-    											}catch(e){
-    												console.log(e);
-    											}
-    										}
-    									}
-    								}							
+    								let animations = Object.keys(compiled.animations);
 
     								for(let i = 0; i < animations.length; i++){
-    									if(inDependMode){
-    										//console.log('Writing anim in depend mode: ' + animations[i])
-    										await outputFileSystem.writeFile(outBPPath + 'animations/' + animations[i], compiled.animations[animations[i]]);
-    									}else {
-    										outAnimations[animations[i]] = compiled.animations[animations[i]];
-    									}
+    									outAnimations[animations[i]] = compiled.animations[animations[i]];
     								}
 
     								fileContent = compiled.entity;
@@ -2061,14 +2188,6 @@
 
     			if(options.mode != 'development'){
     				outBPPath = projectRoot + '/builds/dist/' + projectRoot.split('/')[1] + ' BP/';
-    			}
-
-    			await outputFileSystem.mkdir(outBPPath + 'animations');
-
-    			let animations = Object.getOwnPropertyNames(outAnimations);
-
-    			for(let i = 0; i < animations.length; i++){
-    				await outputFileSystem.writeFile(outBPPath + 'animations/' + animations[i], outAnimations[animations[i]]);
     			}
 
     			await outputFileSystem.mkdir(outBPPath + 'functions');
@@ -2096,18 +2215,25 @@
     				}));
     			}
 
-    			inDependMode = true;
-
     			//console.log('Compiling Extra Entities')
     			//console.log(entitiesToCompile)
     			await compileFiles(entitiesToCompile);
 
+    			await outputFileSystem.mkdir(outBPPath + 'animations');
+
+    			let animations = Object.keys(outAnimations);
+
+    			let animationFile = {};
+
+    			for(let i = 0; i < animations.length; i++){
+    				animationFile[animations[i]] = outAnimations[animations[i]];
+    			}
+
+    			await outputFileSystem.writeFile(outBPPath + 'animations/firework_backend.json', JSON.stringify(animationFile, null, 4));
+
     			outAnimations = {};
-    			dependAnaimtions = {};
 
     			entitiesToCompile = [];
-
-    			inDependMode = false;
             },
     	}
     };

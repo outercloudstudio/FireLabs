@@ -20,7 +20,7 @@ import * as Native from './Native.js'
 */
 
 export function Compile(tree, config, source){
-    console.log(tree)
+    console.log(JSON.parse(JSON.stringify(tree)))
 
     //#region NOTE: Setup json values for editing
     let worldRuntime = source
@@ -226,9 +226,7 @@ export function Compile(tree, config, source){
 
         if(!canBeOptimized) return expression
 
-        expression.dynamic = Native.isOperationDynamic(expression)
-
-        if(expression.dynamic) return expression
+        if(Native.isOperationDynamic(expression)) return expression
 
         if(!Native.canDoOperation(expression)){
             let pTypes = []
@@ -382,9 +380,57 @@ export function Compile(tree, config, source){
             }
         }
     }
+
+    console.log(JSON.parse(JSON.stringify(tree)))
     //#endregion
     
-    console.log(tree)
+    //#region NOTE: Compile Dynamic Values
+    const dynamicValueNames = Object.keys(dynamicValues)
+    
+    for(const i in dynamicValueNames){
+        const name = dynamicValueNames[i]
+
+        outAnimations['animation.firework.backend.' + name] = {
+            loop: true,
+            timeline: {
+                '0.0': [
+                    `/tag @s add frwb_dv_${name}`
+                ]
+            },
+            animation_length: 0.001
+        }
+
+        outAnimations['animation.firework.backend.' + name + '.inverse'] = {
+            loop: true,
+            timeline: {
+                '0.0': [
+                    `/tag @s remove frwb_dv_${name}`
+                ]
+            },
+            animation_length: 0.001
+        }
+
+        worldRuntime['minecraft:entity'].description.animations[name] = 'animation.firework.backend.' + name
+        worldRuntime['minecraft:entity'].description.animations[name + '_inverse'] = 'animation.firework.backend.' + name + '.inverse'
+
+        let scriptData = {}
+
+        console.log(JSON.parse(JSON.stringify(dynamicValues[name])))
+        console.log(Native.expressionToMolang(JSON.parse(JSON.stringify(dynamicValues[name]))))
+
+        scriptData[name] = ''
+
+        worldRuntime['minecraft:entity'].description.scripts.animate.push(scriptData)
+
+        scriptData = {}
+
+        scriptData[name + '_inverse'] = '(' + '' + ') == 0'
+
+        worldRuntime['minecraft:entity'].description.scripts.animate.push(scriptData)
+    }
+    //#endregion
+
+    console.log(JSON.parse(JSON.stringify(tree)))
 
     return {
         animations: outAnimations,
