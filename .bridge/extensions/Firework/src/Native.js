@@ -560,6 +560,12 @@ export function tokenToUseable(token){
     }
 }
 
+let dynamicFlags = {}
+
+export function setDynamicFlags(flags){
+    dynamicFlags = flags
+}
+
 export function tokenToMolang(token){
     if(token.token == 'INTEGER'){
         return {
@@ -592,6 +598,13 @@ export function tokenToMolang(token){
         return {
             value: `q.actor_property('frw:${token.value}')`,
             token: 'MOLANG'
+        }
+    }else if(token.token == 'NAME'){
+        if(dynamicFlags[token.value]){
+            return {
+                value: dynamicFlags[token.value],
+                token: 'MOLANG'
+            }
         }
     }
 

@@ -74,6 +74,8 @@ export function Compile(tree, config, source){
     if(deep instanceof Backend.Error){
         return deep
     }
+
+    Native.setDynamicFlags(dynamicFlags)
     //#endregion
 
     //#region NOTE: Dynamic Value Init - Index Flags
@@ -322,6 +324,7 @@ export function Compile(tree, config, source){
     if(deep instanceof Backend.Error){
         return deep
     }
+
     //#endregion
 
     //#region NOTE: Index Dynamic Values
@@ -414,9 +417,7 @@ export function Compile(tree, config, source){
         worldRuntime['minecraft:entity'].description.animations[name + '_inverse'] = 'animation.firework.backend.' + name + '.inverse'
 
         let scriptData = {}
-
-        console.log(Native.variableToMolang(JSON.parse(JSON.stringify(dynamicValues[name]))))
-
+        
         scriptData[name] = Native.variableToMolang(dynamicValues[name]).value
 
         worldRuntime['minecraft:entity'].description.scripts.animate.push(scriptData)

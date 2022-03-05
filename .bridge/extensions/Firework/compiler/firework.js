@@ -583,6 +583,12 @@
         }
     }
 
+    let dynamicFlags = {};
+
+    function setDynamicFlags(flags){
+        dynamicFlags = flags;
+    }
+
     function tokenToMolang(token){
         if(token.token == 'INTEGER'){
             return {
@@ -615,6 +621,13 @@
             return {
                 value: `q.actor_property('frw:${token.value}')`,
                 token: 'MOLANG'
+            }
+        }else if(token.token == 'NAME'){
+            if(dynamicFlags[token.value]){
+                return {
+                    value: dynamicFlags[token.value],
+                    token: 'MOLANG'
+                }
             }
         }
 
@@ -724,6 +737,8 @@
         if(deep instanceof Error){
             return deep
         }
+
+        setDynamicFlags(dynamicFlags);
         //#endregion
 
         //#region NOTE: Dynamic Value Init - Index Flags
@@ -970,6 +985,7 @@
         if(deep instanceof Error){
             return deep
         }
+
         //#endregion
 
         //#region NOTE: Index Dynamic Values
