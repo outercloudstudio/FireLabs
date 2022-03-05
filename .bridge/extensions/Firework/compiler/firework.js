@@ -188,6 +188,22 @@
         return functions[name].variations != undefined
     }
 
+    function doesFunctionSupportMolang(name){
+        if(!doesFunctionExist(name)){
+            return false
+        }
+
+        return functions[name].supports == 'molang'
+    }
+
+    function doesFunctionSupportEntity(name){
+        if(!doesFunctionExist(name)){
+            return false
+        }
+
+        return functions[name].supports == 'entity'
+    }
+
     function doesTemplateMatch(params, template){
         let pTemplate = [];
 
@@ -206,6 +222,42 @@
         }
 
         return true
+    }
+
+    function getFunction(name, params){
+        if(!doesFunctionExist(name)){
+            console.warn('Function does not exist: ' + name);
+            return null
+        }
+
+        if(!doesFunctionExistWithTemplate(name, params)){
+            console.warn('Function does not exist with template: ' + name);
+            return null
+        }
+
+        if(doesFunctionHaveVariations(name)){
+            for(const i in functions[name].variations){
+                if(doesTemplateMatch(params, functions[name].variations[i].params)){
+                    if(doesFunctionSupportMolang(name)){
+                        return functions[name].variations[i].asMolang(params)
+                    }
+
+                    if(doesFunctionSupportEntity(name)){
+                        return functions[name].variations[i].asEntity(params)
+                    }
+                }
+            }
+        }else {
+            if(doesTemplateMatch(params, functions[name].params)){
+                if(doesFunctionSupportMolang(name)){
+                    return functions[name].asMolang(params)
+                }
+
+                if(doesFunctionSupportEntity(name)){
+                    return functions[name].asEntity(params)
+                }
+            }
+        }
     }
 
     function getIsFunctionDynamic(name, params){
@@ -247,7 +299,7 @@
             },
 
             toMolang(params){
-                return `${params[0].value} + ${params[1].value}`
+                return `${variableToMolang(params[0]).value} + ${variableToMolang(params[1]).value}`
             }
         },
 
@@ -265,7 +317,7 @@
             },
 
             toMolang(params){
-                return `${params[0].value} - ${params[1].value}`
+                return `${variableToMolang(params[0]).value} - ${variableToMolang(params[1]).value}`
             }
         },
 
@@ -283,7 +335,7 @@
             },
 
             toMolang(params){
-                return `${params[0].value} * ${params[1].value}`
+                return `${variableToMolang(params[0]).value} * ${variableToMolang(params[1]).value}`
             }
         },
 
@@ -301,7 +353,7 @@
             },
 
             toMolang(params){
-                return `${params[0].value} / ${params[1].value}`
+                return `${variableToMolang(params[0]).value} / ${variableToMolang(params[1]).value}`
             }
         },
         
@@ -319,7 +371,7 @@
             },
 
             toMolang(params){
-                return `${params[0].value} && ${params[1].value}`
+                return `${variableToMolang(params[0]).value} && ${variableToMolang(params[1]).value}`
             }
         },
 
@@ -337,7 +389,7 @@
             },
 
             toMolang(params){
-                return `${params[0].value} || ${params[1].value}`
+                return `${variableToMolang(params[0]).value} || ${variableToMolang(params[1]).value}`
             }
         },
 
@@ -362,7 +414,7 @@
             },
 
             toMolang(params){
-                return `${params[0].value} == ${params[1].value}`
+                return `${variableToMolang(params[0]).value} == ${variableToMolang(params[1]).value}`
             }
         },
 
@@ -380,7 +432,7 @@
             },
 
             toMolang(params){
-                return `${params[0].value} > ${params[1].value}`
+                return `${variableToMolang(params[0]).value} > ${variableToMolang(params[1]).value}`
             }
         },
 
@@ -398,7 +450,7 @@
             },
 
             toMolang(params){
-                return `${params[0].value} < ${params[1].value}`
+                return `${variableToMolang(params[0]).value} < ${variableToMolang(params[1]).value}`
             }
         },
 
@@ -416,7 +468,7 @@
             },
 
             toMolang(params){
-                return `${params[0].value} >= ${params[1].value}`
+                return `${variableToMolang(params[0]).value} >= ${variableToMolang(params[1]).value}`
             }
         },
 
@@ -434,7 +486,7 @@
             },
 
             toMolang(params){
-                return `${params[0].value} <= ${params[1].value}`
+                return `${variableToMolang(params[0]).value} <= ${variableToMolang(params[1]).value}`
             }
         },
 
@@ -451,7 +503,7 @@
             },
 
             toMolang(params){
-                return `!${params[0].value}`
+                return `!${variableToMolang(params[0]).value}`
             }
         },
     };
@@ -532,92 +584,71 @@
     }
 
     function tokenToMolang(token){
-        console.log('TOKEN TO MOLANG');
-        console.log(token);
-
         if(token.token == 'INTEGER'){
-            console.log('TTM: ' + token.value);
             return {
                 value: token.value,
                 token: 'MOLANG'
             }
         }else if(token.token == 'BOOLEAN'){
             if(token.value == 'true'){
-                console.log('TTM: 1');
                 return {
                     value: '1',
                     token: 'MOLANG'
                 }
             }else {
-                console.log('TTM: 0');
                 return {
                     value: '0',
                     token: 'MOLANG'
                 }
             }
         }else if(token.token == 'STRING'){
-            console.log('TTM: \'' + token.value + '\'');
             return {
                 value: '\'' + token.value + '\'',
                 token: 'MOLANG'
             }
         }else if(token.token == 'MOLANG'){
-            console.log('TTM: ' + token.value);
             return {
                 value: token.value,
                 token: 'MOLANG'
             }
+        }else if(token.token == 'FLAG'){
+            return {
+                value: `q.actor_property('frw:${token.value}')`,
+                token: 'MOLANG'
+            }
         }
 
-        console.log('TTM: idk');
         return {
             value: 'idk',
             token: 'MOLANG'
         }
     }
 
-    function operationToMolang(operation){
-        console.log('OPERATION TO MOLANG');
-        console.log(operation);
+    function variableToMolang(token){
+        if(token.token == 'EXPRESSION'){
+            const operation = token.value[0].value;
+            const params = token.value.slice(1);
 
-        const params = operation.value.slice(1);
+            token = {
+                value: '(' + operations[operation].toMolang(params) + ')',
+                token: 'MOLANG'
+            };        
+        }else if(token.token == 'CALL'){
+            const cName = token.value[0].value;
+            const cParams = token.value.slice(1);
 
-        const operationName = operation.value[0].value;
-
-        console.log('OTML ' + operations[operationName].toMolang(params));
-
-        return operations[operationName].toMolang(params)
-    }
-
-    function expressionToMolang(expression){
-        console.log('Expression to molang');
-        console.log(expression);
-
-        const params = expression.value.slice(1);
-
-        for(let i = 0; i < params.length; i++){
-            if(params[i].token == 'EXPRESSION'){
-                expression.value[i + 1] = expressionToMolang(params[i]);
-            }else if(params[i].token == 'CALL'){
-                const cParams = params[i].value.slice(1);
-                const cName = params[i].value[0].value;
-
-                console.log('CALL TO M: ' + cName);
-
-                expression.value[i + 1] = functions[cName].toMolang(cParams);
-            }else {
-                expression.value[i + 1] = tokenToMolang(params[i]);
-            }
+            token = {
+                value: '(' + getFunction(cName, cParams) + ')',
+                token: 'MOLANG'
+            };
+        }else {
+            token = {
+                value: '(' + tokenToMolang(token).value + ')',
+                token: 'MOLANG'
+            };
         }
-
-        console.log('Now going to oper to m');
-        console.log(expression);
-        console.log(operationToMolang(JSON.parse(JSON.stringify(expression))));
-
-        return {
-            value: operationToMolang(expression),
-            token: 'MOLANG'
-        }
+        
+        return token
     }
 
     /*
@@ -1032,16 +1063,15 @@
 
             let scriptData = {};
 
-            console.log(JSON.parse(JSON.stringify(dynamicValues[name])));
-            console.log(expressionToMolang(JSON.parse(JSON.stringify(dynamicValues[name]))));
+            console.log(variableToMolang(JSON.parse(JSON.stringify(dynamicValues[name]))));
 
-            scriptData[name] = '';
+            scriptData[name] = variableToMolang(dynamicValues[name]).value;
 
             worldRuntime['minecraft:entity'].description.scripts.animate.push(scriptData);
 
             scriptData = {};
 
-            scriptData[name + '_inverse'] = '(' + '' + ') == 0';
+            scriptData[name + '_inverse'] = '!(' + variableToMolang(dynamicValues[name]).value + ')';
 
             worldRuntime['minecraft:entity'].description.scripts.animate.push(scriptData);
         }

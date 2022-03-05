@@ -276,7 +276,7 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${params[0].value} + ${params[1].value}`
+            return `${variableToMolang(params[0]).value} + ${variableToMolang(params[1]).value}`
         }
     },
 
@@ -294,7 +294,7 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${params[0].value} - ${params[1].value}`
+            return `${variableToMolang(params[0]).value} - ${variableToMolang(params[1]).value}`
         }
     },
 
@@ -312,7 +312,7 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${params[0].value} * ${params[1].value}`
+            return `${variableToMolang(params[0]).value} * ${variableToMolang(params[1]).value}`
         }
     },
 
@@ -330,7 +330,7 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${params[0].value} / ${params[1].value}`
+            return `${variableToMolang(params[0]).value} / ${variableToMolang(params[1]).value}`
         }
     },
     
@@ -348,7 +348,7 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${params[0].value} && ${params[1].value}`
+            return `${variableToMolang(params[0]).value} && ${variableToMolang(params[1]).value}`
         }
     },
 
@@ -366,7 +366,7 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${params[0].value} || ${params[1].value}`
+            return `${variableToMolang(params[0]).value} || ${variableToMolang(params[1]).value}`
         }
     },
 
@@ -391,7 +391,7 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${params[0].value} == ${params[1].value}`
+            return `${variableToMolang(params[0]).value} == ${variableToMolang(params[1]).value}`
         }
     },
 
@@ -409,7 +409,7 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${params[0].value} > ${params[1].value}`
+            return `${variableToMolang(params[0]).value} > ${variableToMolang(params[1]).value}`
         }
     },
 
@@ -427,7 +427,7 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${params[0].value} < ${params[1].value}`
+            return `${variableToMolang(params[0]).value} < ${variableToMolang(params[1]).value}`
         }
     },
 
@@ -445,7 +445,7 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${params[0].value} >= ${params[1].value}`
+            return `${variableToMolang(params[0]).value} >= ${variableToMolang(params[1]).value}`
         }
     },
 
@@ -463,7 +463,7 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${params[0].value} <= ${params[1].value}`
+            return `${variableToMolang(params[0]).value} <= ${variableToMolang(params[1]).value}`
         }
     },
 
@@ -480,7 +480,7 @@ export const operations = {
         },
 
         toMolang(params){
-            return `!${params[0].value}`
+            return `!${variableToMolang(params[0]).value}`
         }
     },
 }
@@ -561,90 +561,69 @@ export function tokenToUseable(token){
 }
 
 export function tokenToMolang(token){
-    console.log('TOKEN TO MOLANG')
-    console.log(token)
-
     if(token.token == 'INTEGER'){
-        console.log('TTM: ' + token.value)
         return {
             value: token.value,
             token: 'MOLANG'
         }
     }else if(token.token == 'BOOLEAN'){
         if(token.value == 'true'){
-            console.log('TTM: 1')
             return {
                 value: '1',
                 token: 'MOLANG'
             }
         }else{
-            console.log('TTM: 0')
             return {
                 value: '0',
                 token: 'MOLANG'
             }
         }
     }else if(token.token == 'STRING'){
-        console.log('TTM: \'' + token.value + '\'')
         return {
             value: '\'' + token.value + '\'',
             token: 'MOLANG'
         }
     }else if(token.token == 'MOLANG'){
-        console.log('TTM: ' + token.value)
         return {
             value: token.value,
             token: 'MOLANG'
         }
+    }else if(token.token == 'FLAG'){
+        return {
+            value: `q.actor_property('frw:${token.value}')`,
+            token: 'MOLANG'
+        }
     }
 
-    console.log('TTM: idk')
     return {
         value: 'idk',
         token: 'MOLANG'
     }
 }
 
-export function operationToMolang(operation){
-    console.log('OPERATION TO MOLANG')
-    console.log(operation)
+export function variableToMolang(token){
+    if(token.token == 'EXPRESSION'){
+        const operation = token.value[0].value
+        const params = token.value.slice(1)
 
-    const params = operation.value.slice(1)
+        token = {
+            value: '(' + operations[operation].toMolang(params) + ')',
+            token: 'MOLANG'
+        }        
+    }else if(token.token == 'CALL'){
+        const cName = token.value[0].value
+        const cParams = token.value.slice(1)
 
-    const operationName = operation.value[0].value
-
-    console.log('OTML ' + operations[operationName].toMolang(params))
-
-    return operations[operationName].toMolang(params)
-}
-
-export function expressionToMolang(expression){
-    console.log('Expression to molang')
-    console.log(expression)
-
-    const params = expression.value.slice(1)
-
-    for(let i = 0; i < params.length; i++){
-        if(params[i].token == 'EXPRESSION'){
-            expression.value[i + 1] = expressionToMolang(params[i])
-        }else if(params[i].token == 'CALL'){
-            const cParams = params[i].value.slice(1)
-            const cName = params[i].value[0].value
-
-            console.log('CALL TO M: ' + cName)
-
-            expression.value[i + 1] = getFunction(cName, cParams)
-        }else{
-            expression.value[i + 1] = tokenToMolang(params[i])
+        token = {
+            value: '(' + getFunction(cName, cParams) + ')',
+            token: 'MOLANG'
+        }
+    }else{
+        token = {
+            value: '(' + tokenToMolang(token).value + ')',
+            token: 'MOLANG'
         }
     }
-
-    console.log('Now going to oper to m')
-    console.log(expression)
-    console.log(operationToMolang(JSON.parse(JSON.stringify(expression))))
-
-    return {
-        value: operationToMolang(expression),
-        token: 'MOLANG'
-    }
+    
+    return token
 }

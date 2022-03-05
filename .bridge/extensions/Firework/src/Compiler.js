@@ -415,16 +415,15 @@ export function Compile(tree, config, source){
 
         let scriptData = {}
 
-        console.log(JSON.parse(JSON.stringify(dynamicValues[name])))
-        console.log(Native.expressionToMolang(JSON.parse(JSON.stringify(dynamicValues[name]))))
+        console.log(Native.variableToMolang(JSON.parse(JSON.stringify(dynamicValues[name]))))
 
-        scriptData[name] = ''
+        scriptData[name] = Native.variableToMolang(dynamicValues[name]).value
 
         worldRuntime['minecraft:entity'].description.scripts.animate.push(scriptData)
 
         scriptData = {}
 
-        scriptData[name + '_inverse'] = '(' + '' + ') == 0'
+        scriptData[name + '_inverse'] = '!(' + Native.variableToMolang(dynamicValues[name]).value + ')'
 
         worldRuntime['minecraft:entity'].description.scripts.animate.push(scriptData)
     }
