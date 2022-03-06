@@ -8,15 +8,8 @@ export const functions = {
 
         asEntity (params) {
             return {
-                animations: {},
-                sequence: [
-                    {
-                        run_command: {
-                            command:[
-                                params[0].value
-                            ]
-                        }
-                    }
+                commands:[
+                    params[0].value
                 ]
             }
         },
@@ -31,15 +24,8 @@ export const functions = {
 
         asEntity (params) {
             return {
-                animations: {},
-                sequence: [
-                    {
-                        run_command: {
-                            command:[
-                                'tp ' + params[0].value
-                            ]
-                        }
-                    }
+                commands:[
+                    'tp ' + params[0].value
                 ]
             }
         },
@@ -52,15 +38,8 @@ export const functions = {
 
         asEntity (params) {
             return {
-                animations: {},
-                sequence: [
-                    {
-                        run_command: {
-                            command:[
-                                'kill @s'
-                            ]
-                        }
-                    }
+                commands:[
+                    'kill @s'
                 ]
             }
         },
@@ -76,14 +55,8 @@ export const functions = {
         asEntity (params) {
             return {
                 animations: {},
-                sequence: [
-                    {
-                        run_command: {
-                            command:[
-                                'say ' + params[0].value
-                            ]
-                        }
-                    }
+                commands:[
+                    'say ' + params[0].value
                 ]
             }
         },
@@ -209,6 +182,7 @@ export function getFunction(name, params){
 
     if(!doesFunctionExistWithTemplate(name, params)){
         console.warn('Function does not exist with template: ' + name)
+        console.log(params)
         return null
     }
 

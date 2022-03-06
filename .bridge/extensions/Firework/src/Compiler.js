@@ -383,8 +383,6 @@ export function Compile(tree, config, source){
             }
         }
     }
-
-    console.log(JSON.parse(JSON.stringify(tree)))
     //#endregion
     
     //#region NOTE: Compile Dynamic Values
@@ -460,7 +458,7 @@ export function Compile(tree, config, source){
     
         eventData.set_actor_property['frw:' + name] = 0
 
-        worldRuntime['minecraft:entity'].events[name + '_false'] = eventData
+        worldRuntime['minecraft:entity'].events['frw_' + name + '_false'] = eventData
 
         worldRuntime['minecraft:entity'].description.properties['frw:' + name] = {
             values: [
@@ -468,6 +466,71 @@ export function Compile(tree, config, source){
                 1
             ]
         }
+    }
+    //#endregion
+    
+    //#region NOTE: Compile Code Blocks
+    function compileCodeBlock(name, value){
+        let commands = []
+
+        let eventData = {
+            run_command: {
+                command: []
+            }
+        }
+
+        for(let i = 0; i < value.length; i++){
+            if(value[i].token == 'CALL'){
+                const name = value[i].value[0].value
+                const params = value[i].value.slice(1)
+
+                if(!Native.doesFunctionExist(name) && !functionNames.includes(name)){
+                    return new Backend.Error(`Function ${name} does not exist!`)
+                }
+
+                if(Native.doesFunctionExist(name)){
+                    if(!Native.doesFunctionExistWithTemplate(name, params)){
+                        return new Backend.Error(`Function ${name} does not exist with template!`)
+                    }
+
+                    console.log('GETTING FUNCTION: ' + name)
+
+                    let entity = Native.getFunction(name, params)
+
+                    console.log(entity)
+
+                    for(let j = 0; j < entity.commands.length; j++){
+                        commands.push(entity.commands[j])
+                    }
+                } else{
+                    commands.push(`event enitty @s frw_${name}`)
+                }
+            }else if(value[i].token == 'ASSIGN'){
+                if(value[i].value[0].value == 'true'){
+                    commands.push(`event entity @s frw_${name}_true`)
+                }else{
+                    commands.push(`event entity @s frw_${name}_false`)
+                }
+            }else if(value[i].token == 'IF'){
+                const valueID = value[i].value[0].value
+
+                compileCodeBlock('frwb_' + valueID, value[i].value[1].value)
+
+                commands.push(`event entity @s[tag=frw_dv_${valueID}] frwb_${valueID}`)
+            }
+        }
+    
+        eventData.run_command.command = commands
+
+        worldRuntime['minecraft:entity'].events['frw_' + name] = eventData
+    }
+    
+    const functionNames = Object.keys(functions)
+
+    for(const i in functionNames){
+        const name = functionNames[i]
+
+        compileCodeBlock(name, functions[name])
     }
     //#endregion
     

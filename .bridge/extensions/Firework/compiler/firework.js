@@ -31,15 +31,8 @@
 
             asEntity (params) {
                 return {
-                    animations: {},
-                    sequence: [
-                        {
-                            run_command: {
-                                command:[
-                                    params[0].value
-                                ]
-                            }
-                        }
+                    commands:[
+                        params[0].value
                     ]
                 }
             },
@@ -54,15 +47,8 @@
 
             asEntity (params) {
                 return {
-                    animations: {},
-                    sequence: [
-                        {
-                            run_command: {
-                                command:[
-                                    'tp ' + params[0].value
-                                ]
-                            }
-                        }
+                    commands:[
+                        'tp ' + params[0].value
                     ]
                 }
             },
@@ -75,15 +61,8 @@
 
             asEntity (params) {
                 return {
-                    animations: {},
-                    sequence: [
-                        {
-                            run_command: {
-                                command:[
-                                    'kill @s'
-                                ]
-                            }
-                        }
+                    commands:[
+                        'kill @s'
                     ]
                 }
             },
@@ -99,14 +78,8 @@
             asEntity (params) {
                 return {
                     animations: {},
-                    sequence: [
-                        {
-                            run_command: {
-                                command:[
-                                    'say ' + params[0].value
-                                ]
-                            }
-                        }
+                    commands:[
+                        'say ' + params[0].value
                     ]
                 }
             },
@@ -232,6 +205,7 @@
 
         if(!doesFunctionExistWithTemplate(name, params)){
             console.warn('Function does not exist with template: ' + name);
+            console.log(params);
             return null
         }
 
@@ -1044,8 +1018,6 @@
                 };
             }
         }
-
-        console.log(JSON.parse(JSON.stringify(tree)));
         //#endregion
         
         //#region NOTE: Compile Dynamic Values
@@ -1121,7 +1093,7 @@
         
             eventData.set_actor_property['frw:' + name] = 0;
 
-            worldRuntime['minecraft:entity'].events[name + '_false'] = eventData;
+            worldRuntime['minecraft:entity'].events['frw_' + name + '_false'] = eventData;
 
             worldRuntime['minecraft:entity'].description.properties['frw:' + name] = {
                 values: [
@@ -1131,6 +1103,72 @@
             };
         }
         //#endregion
+        
+        //#region NOTE: Compile Code Blocks
+        function compileCodeBlock(name, value){
+            let commands = [];
+
+            let eventData = {
+                run_command: {
+                    command: []
+                }
+            };
+
+            for(let i = 0; i < value.length; i++){
+                if(value[i].token == 'CALL'){
+                    const name = value[i].value[0].value;
+                    const params = value[i].value.slice(1);
+
+                    if(!doesFunctionExist(name) && !functionNames.includes(name)){
+                        return new Error(`Function ${name} does not exist!`)
+                    }
+
+                    if(doesFunctionExist(name)){
+                        if(!doesFunctionExistWithTemplate(name, params)){
+                            return new Error(`Function ${name} does not exist with template!`)
+                        }
+
+                        console.log('GETTING FUNCTION: ' + name);
+
+                        let entity = getFunction(name, params);
+
+                        console.log(entity);
+
+                        for(let j = 0; j < entity.commands.length; j++){
+                            commands.push(entity.commands[j]);
+                        }
+                    } else {
+                        commands.push(`event enitty @s frw_${name}`);
+                    }
+                }else if(value[i].token == 'ASSIGN'){
+                    if(value[i].value[0].value == 'true'){
+                        commands.push(`event entity @s frw_${name}_true`);
+                    }else {
+                        commands.push(`event entity @s frw_${name}_false`);
+                    }
+                }else if(value[i].token == 'IF'){
+                    const valueID = value[i].value[0].value;
+
+                    compileCodeBlock('frwb_' + valueID, value[i].value[1].value);
+
+                    commands.push(`event entity @s[tag=frw_dv_${valueID}] frwb_${valueID}`);
+                }
+            }
+        
+            eventData.run_command.command = commands;
+
+            worldRuntime['minecraft:entity'].events['frw_' + name] = eventData;
+        }
+        
+        const functionNames = Object.keys(functions);
+
+        for(const i in functionNames){
+            const name = functionNames[i];
+
+            compileCodeBlock(name, functions[name]);
+        }
+        //#endregion
+        
         console.log(JSON.parse(JSON.stringify(tree)));
 
         return {
