@@ -37,7 +37,7 @@ func notUp => {
 }
 
 func update => {
-    rc("execute @s ~ ~ ~ detect ~ ~-0.6 ~ air 0 event entity @s frw:inAir")
+    rc("execute @s ~ ~ ~ detect ~ ~-0.6 ~ air 0 event entity @s frw:inAir") 
     rc("execute @s ~ ~ ~ detect ~ ~-0.6 ~ fl:ground 0 event entity @s frw:notInAir")
     rc("execute @s ~ ~ ~ detect ~ ~-0.6 ~ fl:question 0 event entity @s frw:notInAir")
     rc("execute @s ~ ~ ~ detect ~ ~ ~0.5 air 0 event entity @s frw:notInFront")
@@ -46,6 +46,7 @@ func update => {
     rc("execute @s ~ ~ ~ detect ~ ~2 ~ air 0 event entity @s frw:notUp")
     rc("execute @s ~ ~ ~ detect ~ ~2 ~ fl:ground 0 event entity @s frw:up")
     rc("execute @s ~ ~ ~ detect ~ ~2 ~ fl:question 0 event entity @s frw:up")
+    rc('say hello ""')
 }
 
 func jump => {
