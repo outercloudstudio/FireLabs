@@ -1078,9 +1078,7 @@
             worldRuntime['minecraft:entity'].description.animations[name + '_inverse'] = 'animation.firework.backend.' + name + '.inverse';
 
             let scriptData = {};
-
-            console.log(variableToMolang(JSON.parse(JSON.stringify(dynamicValues[name]))));
-
+            
             scriptData[name] = variableToMolang(dynamicValues[name]).value;
 
             worldRuntime['minecraft:entity'].description.scripts.animate.push(scriptData);
@@ -1093,6 +1091,46 @@
         }
         //#endregion
 
+        //#region NOTE: Compile Flags
+        const flagNames = Object.keys(dynamicFlags);
+
+        for(const i in flagNames){
+            const name = flagNames[i];
+
+            let eventData = {
+                set_actor_property: {},
+                run_command: {
+                    command: [
+                        `tag @s add frw_${name}`
+                    ]
+                }
+            };
+        
+            eventData.set_actor_property['frw:' + name] = 1;
+
+            worldRuntime['minecraft:entity'].events[name + '_true'] = eventData;
+
+            eventData = {
+                set_actor_property: {},
+                run_command: {
+                    command: [
+                        `tag @s remove frw_${name}`
+                    ]
+                }
+            };
+        
+            eventData.set_actor_property['frw:' + name] = 0;
+
+            worldRuntime['minecraft:entity'].events[name + '_false'] = eventData;
+
+            worldRuntime['minecraft:entity'].description.properties['frw:' + name] = {
+                values: [
+                    0,
+                    1
+                ]
+            };
+        }
+        //#endregion
         console.log(JSON.parse(JSON.stringify(tree)));
 
         return {
