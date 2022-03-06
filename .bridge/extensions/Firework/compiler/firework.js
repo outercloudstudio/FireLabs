@@ -93,7 +93,7 @@
                     params: [],
             
                     asMolang (params) {
-                        return `(math.die_roll_integer(1, 0, 1) == 0)`
+                        return `(math.random(0, 1) >= 0.5)`
                     },
 
                     dynamic: true
@@ -105,20 +105,7 @@
                     ],
             
                     asMolang (params) {
-                        return `(math.die_roll_integer(1, 0, ${tokenToMolang(params[0])}) == 0)`
-                    },
-
-                    dynamic: true
-                },
-
-                {
-                    params: [
-                        'INTEGER',
-                        'INTEGER'
-                    ],
-            
-                    asMolang (params) {
-                        return `(math.die_roll(1, ${tokenToMolang(params[0])}, ${tokenToMolang(params[1])}) == 0)`
+                        return `(math.random(0, 1) >= ${1 / variableToMolang(params[0]).value * 0.5})`
                     },
 
                     dynamic: true
@@ -1064,7 +1051,7 @@
         //#endregion
 
         //#region NOTE: Compile Flags
-        const flagNames = Object.keys(dynamicFlags);
+        const flagNames = Object.keys(flags);
 
         for(const i in flagNames){
             const name = flagNames[i];
@@ -1105,6 +1092,8 @@
         //#endregion
         
         //#region NOTE: Compile Code Blocks
+        let delayChannelTicks = [];
+        
         function compileCodeBlock(name, value){
             let commands = [];
 
@@ -1128,17 +1117,13 @@
                             return new Error(`Function ${name} does not exist with template!`)
                         }
 
-                        console.log('GETTING FUNCTION: ' + name);
-
                         let entity = getFunction(name, params);
-
-                        console.log(entity);
 
                         for(let j = 0; j < entity.commands.length; j++){
                             commands.push(entity.commands[j]);
                         }
                     } else {
-                        commands.push(`event enitty @s frw_${name}`);
+                        commands.push(`event entity @s frw_${name}`);
                     }
                 }else if(value[i].token == 'ASSIGN'){
                     if(value[i].value[0].value == 'true'){
@@ -1151,7 +1136,65 @@
 
                     compileCodeBlock('frwb_' + valueID, value[i].value[1].value);
 
-                    commands.push(`event entity @s[tag=frw_dv_${valueID}] frwb_${valueID}`);
+                    commands.push(`event entity @s[tag=frwb_dv_${valueID}] frw_frwb_${valueID}`);
+                }else if(value[i].token == 'DELAY'){
+                    const delayID = uuidv4();
+                    const delay = tokenToUseable(value[i].value[0]);
+
+                    compileCodeBlock('frwb_delay_result_' + delayID, value[i].value[1].value);
+
+                    let triggerCommands = [];
+
+                    for(let j = 0; j < 3; j++){
+                        triggerCommands.push(`event entity @s[tag=!frwb_delay_added] frwb_delay_trigger_channel_${j}_${delayID}`);
+
+                        worldRuntime['minecraft:entity'].events[`frwb_delay_trigger_channel_${j}_${delayID}`] = {
+                            run_command: {
+                                command: [
+                                    'tag @s add frwb_delay_added',
+                                    `tag @s add frwb_delay_tick_channel_${j}_0_${delayID}`
+                                ]
+                            }
+                        };
+
+                        for(let u = delay; u > 0; u--){
+                            if(u == delay){
+                                delayChannelTicks.push(`event entity @s[tag=frwb_delay_tick_channel_${j}_${u - 1}_${delayID}] frwb_delay_tick_channel_${j}_${u}_${delayID}`);
+                            
+                                worldRuntime['minecraft:entity'].events[`frwb_delay_tick_channel_${j}_${u}_${delayID}`] = {
+                                    run_command: {
+                                        command: [
+                                            `tag @s remove frwb_delay_tick_channel_${j}_${u - 1}_${delayID}`,
+                                            `event entity @s frw_frwb_delay_result_${delayID}`
+                                        ]
+                                    }
+                                };
+
+                                continue
+                            }
+
+                            delayChannelTicks.push(`event entity @s[tag=frwb_delay_tick_channel_${j}_${u - 1}_${delayID}] frwb_delay_tick_channel_${j}_${u}_${delayID}`);
+                            
+                            worldRuntime['minecraft:entity'].events[`frwb_delay_tick_channel_${j}_${u}_${delayID}`] = {
+                                run_command: {
+                                    command: [
+                                        `tag @s remove frwb_delay_tick_channel_${j}_${u - 1}_${delayID}`,
+                                        `tag @s add frwb_delay_tick_channel_${j}_${u}_${delayID}`
+                                    ]
+                                }
+                            };
+                        }
+                    }
+
+                    triggerCommands.push('tag @s remove frwb_delay_added');
+
+                    worldRuntime['minecraft:entity'].events['frwb_delay_trigger_' + delayID] = {
+                        run_command: {
+                            command: triggerCommands
+                        }
+                    };
+
+                    commands.push(`event entity @s frwb_delay_trigger_${delayID}`);
                 }
             }
         
@@ -1167,9 +1210,13 @@
 
             compileCodeBlock(name, functions[name]);
         }
+
+        worldRuntime['minecraft:entity'].events.frwb_delay = {
+            run_command: {
+                command: delayChannelTicks
+            }
+        };
         //#endregion
-        
-        console.log(JSON.parse(JSON.stringify(tree)));
 
         return {
             animations: outAnimations,
@@ -2343,7 +2390,7 @@
 
     			await outputFileSystem.mkdir(outBPPath + 'functions');
 
-    			let mc = 'event entity @e[tag=started3] frw:update\nevent entity @e[tag=started3] frwb:delay\nevent entity @e[tag=started2, tag=!started3] frw:start\ntag @e[tag=started2] add started3\ntag @e[tag=started] add started2\ntag @e add started';
+    			let mc = 'event entity @e[tag=started3] frw_update\nevent entity @e[tag=started3] frwb_delay\nevent entity @e[tag=started2, tag=!started3] frw_start\ntag @e[tag=started2] add started3\ntag @e[tag=started] add started2\ntag @e add started';
 
     			await outputFileSystem.writeFile(outBPPath + 'functions/firework_runtime.mcfunction', mc);
 
@@ -2374,10 +2421,15 @@
 
     			let animations = Object.keys(outAnimations);
 
-    			let animationFile = {};
+    			let animationFile = {
+    				format_version: '1.10.0',
+    				animations: {
+
+    				}
+    			};
 
     			for(let i = 0; i < animations.length; i++){
-    				animationFile[animations[i]] = outAnimations[animations[i]];
+    				animationFile.animations[animations[i]] = outAnimations[animations[i]];
     			}
 
     			await outputFileSystem.writeFile(outBPPath + 'animations/firework_backend.json', JSON.stringify(animationFile, null, 4));

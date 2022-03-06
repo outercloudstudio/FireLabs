@@ -70,7 +70,7 @@ export const functions = {
                 params: [],
         
                 asMolang (params) {
-                    return `(math.die_roll_integer(1, 0, 1) == 0)`
+                    return `(math.random(0, 1) >= 0.5)`
                 },
 
                 dynamic: true
@@ -82,20 +82,7 @@ export const functions = {
                 ],
         
                 asMolang (params) {
-                    return `(math.die_roll_integer(1, 0, ${tokenToMolang(params[0])}) == 0)`
-                },
-
-                dynamic: true
-            },
-
-            {
-                params: [
-                    'INTEGER',
-                    'INTEGER'
-                ],
-        
-                asMolang (params) {
-                    return `(math.die_roll(1, ${tokenToMolang(params[0])}, ${tokenToMolang(params[1])}) == 0)`
+                    return `(math.random(0, 1) >= ${1 / variableToMolang(params[0]).value * 0.5})`
                 },
 
                 dynamic: true

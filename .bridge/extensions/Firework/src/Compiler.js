@@ -429,7 +429,7 @@ export function Compile(tree, config, source){
     //#endregion
 
     //#region NOTE: Compile Flags
-    const flagNames = Object.keys(dynamicFlags)
+    const flagNames = Object.keys(flags)
 
     for(const i in flagNames){
         const name = flagNames[i]
@@ -470,6 +470,8 @@ export function Compile(tree, config, source){
     //#endregion
     
     //#region NOTE: Compile Code Blocks
+    let delayChannelTicks = []
+    
     function compileCodeBlock(name, value){
         let commands = []
 
@@ -493,17 +495,13 @@ export function Compile(tree, config, source){
                         return new Backend.Error(`Function ${name} does not exist with template!`)
                     }
 
-                    console.log('GETTING FUNCTION: ' + name)
-
                     let entity = Native.getFunction(name, params)
-
-                    console.log(entity)
 
                     for(let j = 0; j < entity.commands.length; j++){
                         commands.push(entity.commands[j])
                     }
                 } else{
-                    commands.push(`event enitty @s frw_${name}`)
+                    commands.push(`event entity @s frw_${name}`)
                 }
             }else if(value[i].token == 'ASSIGN'){
                 if(value[i].value[0].value == 'true'){
@@ -516,7 +514,65 @@ export function Compile(tree, config, source){
 
                 compileCodeBlock('frwb_' + valueID, value[i].value[1].value)
 
-                commands.push(`event entity @s[tag=frw_dv_${valueID}] frwb_${valueID}`)
+                commands.push(`event entity @s[tag=frwb_dv_${valueID}] frw_frwb_${valueID}`)
+            }else if(value[i].token == 'DELAY'){
+                const delayID = Backend.uuidv4()
+                const delay = Native.tokenToUseable(value[i].value[0])
+
+                compileCodeBlock('frwb_delay_result_' + delayID, value[i].value[1].value)
+
+                let triggerCommands = []
+
+                for(let j = 0; j < 3; j++){
+                    triggerCommands.push(`event entity @s[tag=!frwb_delay_added] frwb_delay_trigger_channel_${j}_${delayID}`)
+
+                    worldRuntime['minecraft:entity'].events[`frwb_delay_trigger_channel_${j}_${delayID}`] = {
+                        run_command: {
+                            command: [
+                                'tag @s add frwb_delay_added',
+                                `tag @s add frwb_delay_tick_channel_${j}_0_${delayID}`
+                            ]
+                        }
+                    }
+
+                    for(let u = delay; u > 0; u--){
+                        if(u == delay){
+                            delayChannelTicks.push(`event entity @s[tag=frwb_delay_tick_channel_${j}_${u - 1}_${delayID}] frwb_delay_tick_channel_${j}_${u}_${delayID}`)
+                        
+                            worldRuntime['minecraft:entity'].events[`frwb_delay_tick_channel_${j}_${u}_${delayID}`] = {
+                                run_command: {
+                                    command: [
+                                        `tag @s remove frwb_delay_tick_channel_${j}_${u - 1}_${delayID}`,
+                                        `event entity @s frw_frwb_delay_result_${delayID}`
+                                    ]
+                                }
+                            }
+
+                            continue
+                        }
+
+                        delayChannelTicks.push(`event entity @s[tag=frwb_delay_tick_channel_${j}_${u - 1}_${delayID}] frwb_delay_tick_channel_${j}_${u}_${delayID}`)
+                        
+                        worldRuntime['minecraft:entity'].events[`frwb_delay_tick_channel_${j}_${u}_${delayID}`] = {
+                            run_command: {
+                                command: [
+                                    `tag @s remove frwb_delay_tick_channel_${j}_${u - 1}_${delayID}`,
+                                    `tag @s add frwb_delay_tick_channel_${j}_${u}_${delayID}`
+                                ]
+                            }
+                        }
+                    }
+                }
+
+                triggerCommands.push('tag @s remove frwb_delay_added')
+
+                worldRuntime['minecraft:entity'].events['frwb_delay_trigger_' + delayID] = {
+                    run_command: {
+                        command: triggerCommands
+                    }
+                }
+
+                commands.push(`event entity @s frwb_delay_trigger_${delayID}`)
             }
         }
     
@@ -532,9 +588,13 @@ export function Compile(tree, config, source){
 
         compileCodeBlock(name, functions[name])
     }
+
+    worldRuntime['minecraft:entity'].events.frwb_delay = {
+        run_command: {
+            command: delayChannelTicks
+        }
+    }
     //#endregion
-    
-    console.log(JSON.parse(JSON.stringify(tree)))
 
     return {
         animations: outAnimations,

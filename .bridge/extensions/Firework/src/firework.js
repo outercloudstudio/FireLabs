@@ -202,7 +202,7 @@ module.exports = ({ fileType, fileSystem, projectRoot, outputFileSystem, options
 
 			await outputFileSystem.mkdir(outBPPath + 'functions')
 
-			let mc = 'event entity @e[tag=started3] frw:update\nevent entity @e[tag=started3] frwb:delay\nevent entity @e[tag=started2, tag=!started3] frw:start\ntag @e[tag=started2] add started3\ntag @e[tag=started] add started2\ntag @e add started'
+			let mc = 'event entity @e[tag=started3] frw_update\nevent entity @e[tag=started3] frwb_delay\nevent entity @e[tag=started2, tag=!started3] frw_start\ntag @e[tag=started2] add started3\ntag @e[tag=started] add started2\ntag @e add started'
 
 			await outputFileSystem.writeFile(outBPPath + 'functions/firework_runtime.mcfunction', mc)
 
@@ -233,10 +233,15 @@ module.exports = ({ fileType, fileSystem, projectRoot, outputFileSystem, options
 
 			let animations = Object.keys(outAnimations)
 
-			let animationFile = {}
+			let animationFile = {
+				format_version: '1.10.0',
+				animations: {
+
+				}
+			}
 
 			for(let i = 0; i < animations.length; i++){
-				animationFile[animations[i]] = outAnimations[animations[i]]
+				animationFile.animations[animations[i]] = outAnimations[animations[i]]
 			}
 
 			await outputFileSystem.writeFile(outBPPath + 'animations/firework_backend.json', JSON.stringify(animationFile, null, 4))
