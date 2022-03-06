@@ -2,8 +2,9 @@
     'use strict';
 
     class Error{
-        constructor(message){
+        constructor(message, line){
             this.message = message;
+            this.line = line;
         }
     }
 
@@ -644,8 +645,6 @@
     */
 
     function Compile(tree, config, source){
-        console.log(JSON.parse(JSON.stringify(tree)));
-
         //#region NOTE: Setup json values for editing
         let worldRuntime = source;
 
@@ -1225,6 +1224,20 @@
     }
 
     function splitLines(tokens){
+        console.log(JSON.parse(JSON.stringify(tokens)));
+
+        let lineCount = 1;
+
+        for(let i = 0; i < tokens.length; i++){
+            const token = tokens[i];
+
+            tokens[i].line = lineCount;
+
+            if(token.token == 'NEWLINE' && token.value == '\n'){
+                lineCount++;
+            }
+        }
+
         for(let i = 0; i < tokens.length; i++){
             const token = tokens[i];
 
@@ -1260,9 +1273,15 @@
     function buildCodeBlocks(tokens){
         let openPaths = [];
 
+        let firstBracketLine = -1;
+
         for(let x = 0; x < tokens.length; x++){
             for(let y = 0; y < tokens[x].length; y++){
                 if(tokens[x][y].value == '{' && tokens[x][y].token == 'SYMBOL'){
+                    if(firstBracketLine == -1){
+                        firstBracketLine = tokens[x][y].line;
+                    }
+
                     openPaths.push({ x: x, y: y });
                 }
 
@@ -1270,7 +1289,7 @@
                     let openPath = openPaths.pop();
 
                     if(!openPath){
-                        return new Error('Unexpected }!')
+                        return new Error('Unexpected }!', tokens[x][y].line)
                     }
 
                     let inBlockLines = [];
@@ -1292,7 +1311,7 @@
                         }
                     }
 
-                    tokens[openPath.x].splice(openPath.y, tokens[openPath.x].length, { value: inBlockLines, token: 'BLOCK' });
+                    tokens[openPath.x].splice(openPath.y, tokens[openPath.x].length, { value: inBlockLines, token: 'BLOCK', line: tokens[x][y].line });
 
                     tokens[x].splice(0, y + 1);
 
@@ -1310,7 +1329,7 @@
         }
 
         if(openPaths.length > 0){
-          return new Error('Unclosed \'{\'!')
+          return new Error('Unclosed \'{\'!', firstBracketLine)
         }
 
         return tokens
@@ -1336,6 +1355,8 @@
 
             let removed = false;
 
+            let lastStringLine;
+
             //Remove Whitespace and Create Strings
             for(let i = 0; i < tokens[l].length; i++){
                 const token = tokens[l][i];
@@ -1345,6 +1366,7 @@
 
                     if(inString){
                         inStringIndex = i;
+                        lastStringLine = token.line;
                     }else {            
                         let tokensInString = tokens[l].slice(inStringIndex + 1, i);
 
@@ -1354,7 +1376,7 @@
                             resultString += tokensInString[j].value;
                         }
 
-                        tokens[l].splice(inStringIndex, i - inStringIndex + 1, { value: resultString, token: 'STRING' });
+                        tokens[l].splice(inStringIndex, i - inStringIndex + 1, { value: resultString, token: 'STRING', line: token.line });
 
                         i -= i - inStringIndex;
                     }
@@ -1382,7 +1404,7 @@
             }
 
             if(inString){
-              return new Error('Unclosed string!')
+              return new Error('Unclosed string!', lastStringLine)
             }
 
             //Combine Numbers
@@ -1393,7 +1415,7 @@
                     let nextToken = tokens[l][i + 1];
 
                     if(nextToken && nextToken.token == 'INTEGER'){
-                        tokens[l].splice(i, 2, { value: token.value + nextToken.value, token: 'INTEGER' });
+                        tokens[l].splice(i, 2, { value: token.value + nextToken.value, token: 'INTEGER', line: token.line });
 
                         i--;
                     }
@@ -1406,7 +1428,7 @@
                 const prevToken = tokens[l][i - 1];
 
                 if(token.token == 'NAME' && prevToken && prevToken.token == 'SYMBOL' && prevToken.value == '$'){
-                    tokens[l].splice(i - 1, 2, { value: token.value, token: 'FLAG' });
+                    tokens[l].splice(i - 1, 2, { value: token.value, token: 'FLAG', line: token.line });
 
                     i--;
                 }
@@ -1416,7 +1438,7 @@
                 const token = tokens[l][i];
 
                 if(token.token == 'SYMBOL' && token.value == '$'){
-                    return new Error('Unexpected symbol \'$\'!')
+                    return new Error('Unexpected symbol \'$\'!', token.line)
                 }
             }
 
@@ -1426,7 +1448,7 @@
                 const prevToken = tokens[l][i - 1];
 
                 if(token.token == 'STRING' && prevToken && prevToken.token == 'SYMBOL' && prevToken.value == '?'){
-                    tokens[l].splice(i - 1, 2, { value: token.value, token: 'MOLANG' });
+                    tokens[l].splice(i - 1, 2, { value: token.value, token: 'MOLANG', line: token.line });
 
                     i--;
                 }
@@ -1436,7 +1458,7 @@
                 const token = tokens[l][i];
 
                 if(token.token == 'SYMBOL' && token.value == '?'){
-                    return new Error('Unexpected symbol \'?\'!')
+                    return new Error('Unexpected symbol \'?\'!', token.line)
                 }
             }
 
@@ -1446,7 +1468,7 @@
                 const prevToken = tokens[l][i - 1];
 
                 if(token.token == 'SYMBOL' && token.value == '>' && prevToken && prevToken.token == 'SYMBOL' && prevToken.value == '='){
-                    tokens[l].splice(i - 1, 2, { value: '=>', token: 'ARROW' });
+                    tokens[l].splice(i - 1, 2, { value: '=>', token: 'ARROW', line: token.line });
 
                     i--;
                 }
@@ -1459,7 +1481,7 @@
                 const nextNextToken = tokens[l][i + 2];
 
                 if(token.token == 'NAME' && nextToken && nextToken.value == '(' && nextNextToken && nextNextToken.value == ')'){
-                    tokens[l].splice(i, 3, { value: [token], token: 'CALL' });
+                    tokens[l].splice(i, 3, { value: [token], token: 'CALL', line: token.line });
                 }
             }
         }
@@ -1525,7 +1547,7 @@
                     }
 
                     if(found > 0 || endingIndex == -1){
-                        return new Error('Unclosed parantheses!')
+                        return new Error('Unclosed parantheses!', token.line)
                     }
 
                     let insideTokens = tokens.slice(i + 1, endingIndex);
@@ -1543,7 +1565,7 @@
                     }
 
                     if(deep.length != 1){
-                        return new Error('Unresolved symbols 01:\n' + JSON.stringify(deep, null, 2))
+                        return new Error('Unexpected symbol (01) ' + deep[0].value, deep[0].line)
                     }
 
                     tokens.splice(i, endingIndex - i + 1, deep[0]);
@@ -1563,10 +1585,10 @@
 
                 if(prevToken && nextToken){
                     if(!(nextToken.token == 'INTEGER' || nextToken.token == 'EXPRESSION') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION')){
-                        return new Error(`Can not do operation '${token.value}' with '${nextToken.token}' and '${prevToken.token}'!`)
+                        return new Error(`Can not do operation '${token.value}' with '${nextToken.token}' and '${prevToken.token}'!`, token.line)
                     }
 
-                    tokens.splice(i - 1, 3, { value: [token, prevToken, nextToken], token: 'EXPRESSION' });
+                    tokens.splice(i - 1, 3, { value: [token, prevToken, nextToken], token: 'EXPRESSION', line: token.line });
 
                     i--;
                 }
@@ -1583,10 +1605,10 @@
 
                 if(prevToken && nextToken){
                     if(!(nextToken.token == 'INTEGER' || nextToken.token == 'EXPRESSION') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION')){
-                        return new Error(`Can not do operation '${token.value}' with '${nextToken.token}' and '${prevToken.token}'!`)
+                        return new Error(`Can not do operation '${token.value}' with '${nextToken.token}' and '${prevToken.token}'!`, token.line)
                     }
                     
-                    tokens.splice(i - 1, 3, { value: [token, prevToken, nextToken], token: 'EXPRESSION' });
+                    tokens.splice(i - 1, 3, { value: [token, prevToken, nextToken], token: 'EXPRESSION', line: token.line });
 
                     i--;
                 }
@@ -1602,10 +1624,10 @@
 
                 if(nextToken){
                     if(!(nextToken.token == 'EXPRESSION' || nextToken.token == 'FLAG' || nextToken.token == 'BOOLEAN' || nextToken.token == 'MOLANG')){
-                        return new Error(`Can not do operation '${token.value}' with '${nextToken.token}'!`)
+                        return new Error(`Can not do operation '${token.value}' with '${nextToken.token}'!`, token.line)
                     }
 
-                    tokens.splice(i, 2, { value: [token, nextToken], token: 'EXPRESSION' });
+                    tokens.splice(i, 2, { value: [token, nextToken], token: 'EXPRESSION', line: token.line });
                 }
             }
         }
@@ -1624,31 +1646,31 @@
 
                         if(token.value == '>' || token.value == '<'){
                             if(!(nextNextToken.token == 'INTEGER' || nextNextToken.token == 'EXPRESSION' || nextNextToken.token == 'NAME') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'NAME')){
-                                return new Error(`Can not do operation '${token.value + nextToken.value}' with '${nextNextToken.token}' and '${prevToken.token}'!`)
+                                return new Error(`Can not do operation '${token.value + nextToken.value}' with '${nextNextToken.token}' and '${prevToken.token}'!`, token.line)
                             }
                             
                             const newToken = { value: token.value + nextToken.value, token: 'SYMBOL' };
                             
-                            tokens.splice(i - 1, 4, { value: [newToken, prevToken, nextNextToken], token: 'EXPRESSION' });
+                            tokens.splice(i - 1, 4, { value: [newToken, prevToken, nextNextToken], token: 'EXPRESSION', line: token.line });
 
                             i--;
                         }else {
                             if(!(nextNextToken.token == 'INTEGER' || nextNextToken.token == 'EXPRESSION' || nextNextToken.token == 'BOOLEAN' || nextNextToken.token == 'FLAG' || nextNextToken.token == 'MOLANG' || nextNextToken.token == 'NAME') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'BOOLEAN' || prevToken.token == 'FLAG' || prevToken.token == 'MOLANG' || prevToken.token == 'NAME')){
-                                return new Error(`Can not do operation '${token.value + nextToken.value}' with '${nextNextToken.token}' and '${prevToken.token}'!`)
+                                return new Error(`Can not do operation '${token.value + nextToken.value}' with '${nextNextToken.token}' and '${prevToken.token}'!`, token.line)
                             }
 
                             const newToken = { value: token.value + nextToken.value, token: 'SYMBOL' };
 
-                            tokens.splice(i - 1, 4, { value: [newToken, prevToken, nextNextToken], token: 'EXPRESSION' });
+                            tokens.splice(i - 1, 4, { value: [newToken, prevToken, nextNextToken], token: 'EXPRESSION', line: token.line });
 
                             i--;
                         }
                     }else if(token.value == '>' || token.value == '<'){
                         if(!(nextToken.token == 'INTEGER' || nextToken.token == 'EXPRESSION' || nextNextToken.token == 'NAME') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'NAME')){
-                            return new Error(`Can not do operation '${token.value}' with '${nextToken.token}' and '${prevToken.token}'!`)
+                            return new Error(`Can not do operation '${token.value}' with '${nextToken.token}' and '${prevToken.token}'!`, token.line)
                         }
 
-                        tokens.splice(i - 1, 3, { value: [token, prevToken, nextToken], token: 'EXPRESSION' });
+                        tokens.splice(i - 1, 3, { value: [token, prevToken, nextToken], token: 'EXPRESSION', line: token.line });
 
                         i--;
                     }
@@ -1668,12 +1690,12 @@
                 if(prevToken && nextNextToken){
                     if(!(nextNextToken.token == 'FLAG' || nextNextToken.token == 'EXPRESSION' || nextNextToken.token == 'BOOLEAN' || nextNextToken.token == 'MOLANG' || nextNextToken.token == 'CALL' || nextNextToken.token == 'NAME') || !(prevToken.token == 'FLAG' || prevToken.token == 'EXPRESSION' || prevToken.token == 'BOOLEAN' || prevToken.token == 'MOLANG' || prevToken.token == 'CALL' || prevToken.token == 'NAME')){
                         console.log(tokens);
-                        return new Error(`Can not do operation '${token.value + nextToken.value}' with '${nextNextToken.token}' and '${prevToken.token}'!`)
+                        return new Error(`Can not do operation '${token.value + nextToken.value}' with '${nextNextToken.token}' and '${prevToken.token}'!`, token.line)
                     }
 
                     const newToken = { value: token.value + nextToken.value, token: 'SYMBOL' };
                     
-                    tokens.splice(i - 1, 4, { value: [newToken, prevToken, nextNextToken], token: 'EXPRESSION'});
+                    tokens.splice(i - 1, 4, { value: [newToken, prevToken, nextNextToken], token: 'EXPRESSION', line: token.line });
 
                     i--;
                 }
@@ -1722,7 +1744,7 @@
                                 }
 
                                 if(opensFound != 0 || endIndex == -1){
-                                    return new Error('Unclosed parantheses!')
+                                    return new Error('Unclosed parantheses!', token.line)
                                 }
 
                                 let parsed = buildParamsSingle(tokens.slice(j - 1, endIndex + 1));
@@ -1732,7 +1754,7 @@
                                 }
 
                                 if(parsed.length != 1){
-                                    return new Error('Unresolved symbols 02:\n' + JSON.stringify(parsed, null, 2))
+                                    return new Error('Unexpected symbol (02) ' + parsed[0].value, parsed[0].line)
                                 }
 
                                 tokens.splice(j - 1, endIndex - j + 2, parsed[0]);
@@ -1744,10 +1766,16 @@
 
                     let endIndex = -1;
 
+                    let openFoundLine = -1;
+
                     for(let u = i + 1; u < tokens.length; u++){
                         const otherOtherToken = tokens[u];
 
                         if(otherOtherToken.token == 'SYMBOL' && otherOtherToken.value == '('){
+                            if(openFoundLine == -1){
+                                openFoundLine = otherOtherToken.line;
+                            }
+
                             opensFound++;
                         }
 
@@ -1762,8 +1790,12 @@
                         }
                     }
 
+                    if(openFoundLine == -1){
+                        openFoundLine = token.line;
+                    }
+
                     if(opensFound != 0 || endIndex == -1){
-                        return new Error('Unclosed parantheses!')
+                        return new Error('Unclosed parantheses!', openFoundLine)
                     }
 
                     //Build Expressions Between Commas
@@ -1781,8 +1813,7 @@
                             }
 
                             if(group.length != 1){
-                                console.log(group);
-                                return new Error('Unresolved symbols 03:\n' + JSON.stringify(group, null, 2))
+                                return new Error('Unexpected symbol (03) ' + group[0].value, goalToken.line)
                             }
 
                             groups.push(group[0]);
@@ -1798,7 +1829,7 @@
                     }
 
                     if(group.length != 1){
-                        return new Error('Unresolved symbols 04:\n' + JSON.stringify(group, null, 2))
+                        return new Error('Unexpected symbol (04) ' + group[0].value, group[0].line)
                     }
 
                     groups.push(group[0]);
@@ -1851,10 +1882,10 @@
 
                 if(token.token == 'KEYWORD' && token.value == 'dyn' && nextToken && nextToken.token == 'NAME' && nextNextToken && nextNextToken.token == 'SYMBOL' && nextNextToken.value == '=' && nextNextNextToken){
                     if(!(nextNextNextToken.token == 'MOLANG' || nextNextNextToken.token == 'EXPRESSION')){
-                        return new Error(`Dynamic can't be assigned to ${nextNextNextToken.token}!`)
+                        return new Error(`Dynamic can't be assigned to ${nextNextNextToken.token}!`, token.line)
                     }
 
-                    tokens[l].splice(i, 4, { value: [token, nextToken, nextNextNextToken], token: 'ASSIGN' });
+                    tokens[l].splice(i, 4, { value: [token, nextToken, nextNextNextToken], token: 'ASSIGN', line: token.line });
                 }
             }
         }
@@ -1888,14 +1919,14 @@
 
                 if(token.token == 'KEYWORD' && token.value == 'if' && nextToken && nextToken.token == 'SYMBOL' && nextToken.value == '(' && nextNextToken && nextNextNextToken && nextNextNextToken.token == 'SYMBOL' && nextNextNextToken.value == ')' && nextNextNextNextToken && nextNextNextNextToken.token == 'ARROW' && nextNextNextNextNextToken && nextNextNextNextNextToken.token == 'BLOCK'){
                     if(!(nextNextToken.token == 'FLAG' || nextNextToken.token == 'NAME' || nextNextToken.token == 'BOOLEAN' || nextNextToken.token == 'EXPRESSION' || nextNextToken.token == 'MOLANG' || nextNextToken.token == 'CALL')){
-                        return new Error(`If condition can't be ${nextNextToken.token}!`)
+                        return new Error(`If condition can't be ${nextNextToken.token}!`, token.line)
                     }
                     
                     for(let j = 0; j < nextNextNextNextNextToken.value.length; j++){
                         nextNextNextNextNextToken.value[j] = nextNextNextNextNextToken.value[j][0];
                     }
                     
-                    tokens[l].splice(i, 6, { value: [nextNextToken, nextNextNextNextNextToken], token: 'IF' });
+                    tokens[l].splice(i, 6, { value: [nextNextToken, nextNextNextNextNextToken], token: 'IF', line: token.line });
                 }
             }
 
@@ -1909,14 +1940,14 @@
 
                 if(token.token == 'KEYWORD' && token.value == 'delay' && nextToken && nextToken.token == 'SYMBOL' && nextToken.value == '(' && nextNextToken && nextNextNextToken && nextNextNextToken.token == 'SYMBOL' && nextNextNextToken.value == ')' && nextNextNextNextToken && nextNextNextNextToken.token == 'ARROW' && nextNextNextNextNextToken && nextNextNextNextNextToken.token == 'BLOCK'){
                     if(nextNextToken.token != 'INTEGER'){
-                        return new Error(`Delay must be an integer!`)
+                        return new Error(`Delay must be an integer!`, token.line)
                     }
                     
                     for(let j = 0; j < nextNextNextNextNextToken.value.length; j++){
                         nextNextNextNextNextToken.value[j] = nextNextNextNextNextToken.value[j][0];
                     }
                     
-                    tokens[l].splice(i, 6, { value: [nextNextToken, nextNextNextNextNextToken], token: 'DELAY' });
+                    tokens[l].splice(i, 6, { value: [nextNextToken, nextNextNextNextNextToken], token: 'DELAY', line: token.line });
                 }
             }
         }
@@ -1937,7 +1968,7 @@
                         nextNextNextToken.value[j] = nextNextNextToken.value[j][0];
                     }
                     
-                    tokens[l].splice(i, 6, { value: [nextToken, nextNextNextToken], token: 'DEFINITION' });
+                    tokens[l].splice(i, 6, { value: [nextToken, nextNextNextToken], token: 'DEFINITION', line: token.line });
                 }
             }
         }
@@ -1968,10 +1999,10 @@
 
                 if(token.token == 'FLAG' && nextToken && nextToken.token == 'SYMBOL' && nextToken.value == '=' && nextNextToken){
                     if(nextNextToken.token != 'BOOLEAN'){
-                        return new Error('Can\'t assign flag to ' + nextNextToken.token + '!')
+                        return new Error('Can\'t assign flag to ' + nextNextToken.token + '!', token.line)
                     }
                     
-                    tokens[l].splice(i, 3, { value: [token, nextNextToken], token: 'ASSIGN' });
+                    tokens[l].splice(i, 3, { value: [token, nextNextToken], token: 'ASSIGN', line: token.line });
                 }
             }
         }
@@ -2003,7 +2034,7 @@
         }
 
         if(allEmpty){
-            return new Error('File was empty!')
+            return new Error('File was empty!', 0)
         }
 
         tokens = buildParams(tokens);
@@ -2044,11 +2075,16 @@
 
         for(let l = 0; l < tokens.length; l++){
             if(tokens[l].length != 1){
-                return new Error('Unresolved symbols 05:\n' + JSON.stringify(tokens[l], null, 2))
+                return new Error('Unexpected symbol (05) ' + tokens[l][0].value, tokens[l][0].line)
+            }else if(tokens[l].length == 0){
+                tokens[l].splice(l, 1);
+                l--;
             }else {
                 tokens[l] = tokens[l][0];
             }
         }
+
+        console.log(JSON.parse(JSON.stringify(tokens)));
 
         return tokens
     }
@@ -2350,7 +2386,7 @@
     								const tree = GenerateETree(tokens);
 
     								if(tree instanceof Error){
-    									throw tree.message
+    									throw tree.message + ' on line ' + tree.line + ' in ' + script
     								}
 
     								console.log(filePath + ' : ' + script);
@@ -2360,7 +2396,7 @@
     								}, fileContent);
 
     								if(compiled instanceof Error){
-    									throw compiled.message
+    									throw compiled.message + ' on line ' + tree.line + ' in ' + script
     								}
 
     								let animations = Object.keys(compiled.animations);
