@@ -256,7 +256,8 @@
             optimize(params){
                 return {
                     value: (tokenToUseable(params[0]) + tokenToUseable(params[1])).toString(),
-                    token: 'INTEGER'
+                    token: 'INTEGER',
+                    line: params[0].line
                 }
             },
 
@@ -274,7 +275,8 @@
             optimize(params){
                 return {
                     value: (tokenToUseable(params[0]) - tokenToUseable(params[1])).toString(),
-                    token: 'INTEGER'
+                    token: 'INTEGER',
+                    line: params[0].line
                 }
             },
 
@@ -292,7 +294,8 @@
             optimize(params){
                 return {
                     value: (tokenToUseable(params[0]) * tokenToUseable(params[1])).toString(),
-                    token: 'INTEGER'
+                    token: 'INTEGER',
+                    line: params[0].line
                 }
             },
 
@@ -310,7 +313,8 @@
             optimize(params){
                 return {
                     value: (tokenToUseable(params[0]) / tokenToUseable(params[1])).toString(),
-                    token: 'FLOAT'
+                    token: 'FLOAT',
+                    line: params[0].line
                 }
             },
 
@@ -328,7 +332,8 @@
             optimize(params){
                 return {
                     value: (tokenToUseable(params[0]) && tokenToUseable(params[1])).toString(),
-                    token: 'BOOLEAN'
+                    token: 'BOOLEAN',
+                    line: params[0].line
                 }
             },
 
@@ -346,7 +351,8 @@
             optimize(params){
                 return {
                     value: (tokenToUseable(params[0]) || tokenToUseable(params[1])).toString(),
-                    token: 'BOOLEAN'
+                    token: 'BOOLEAN',
+                    line: params[0].line
                 }
             },
 
@@ -365,13 +371,15 @@
                 if(params[0].token != params[1].token){
                     return {
                         value: 'false',
-                        token: 'BOOLEAN'
+                        token: 'BOOLEAN',
+                        line: params[0].line
                     }
                 }
 
                 return {
                     value: (tokenToUseable(params[0]) == tokenToUseable(params[1])).toString(),
-                    token: 'BOOLEAN'
+                    token: 'BOOLEAN',
+                    line: params[0].line
                 }
             },
 
@@ -389,7 +397,8 @@
             optimize(params){
                 return {
                     value: (tokenToUseable(params[0]) > tokenToUseable(params[1])).toString(),
-                    token: 'INTEGER'
+                    token: 'INTEGER',
+                    line: params[0].line
                 }
             },
 
@@ -407,7 +416,8 @@
             optimize(params){
                 return {
                     value: (tokenToUseable(params[0]) < tokenToUseable(params[1])).toString(),
-                    token: 'INTEGER'
+                    token: 'INTEGER',
+                    line: params[0].line
                 }
             },
 
@@ -425,7 +435,8 @@
             optimize(params){
                 return {
                     value: (tokenToUseable(params[0]) >= tokenToUseable(params[1])).toString(),
-                    token: 'INTEGER'
+                    token: 'INTEGER',
+                    line: params[0].line
                 }
             },
 
@@ -443,7 +454,8 @@
             optimize(params){
                 return {
                     value: (tokenToUseable(params[0]) <= tokenToUseable(params[1])).toString(),
-                    token: 'INTEGER'
+                    token: 'INTEGER',
+                    line: params[0].line
                 }
             },
 
@@ -460,7 +472,8 @@
             optimize(params){
                 return {
                     value: (!tokenToUseable(params[0])).toString(),
-                    token: 'BOOLEAN'
+                    token: 'BOOLEAN',
+                    line: params[0].line
                 }
             },
 
@@ -555,47 +568,55 @@
         if(token.token == 'INTEGER'){
             return {
                 value: token.value,
-                token: 'MOLANG'
+                token: 'MOLANG',
+                line: token.line
             }
         }else if(token.token == 'BOOLEAN'){
             if(token.value == 'true'){
                 return {
                     value: '1',
-                    token: 'MOLANG'
+                    token: 'MOLANG',
+                    line: token.line
                 }
             }else {
                 return {
                     value: '0',
-                    token: 'MOLANG'
+                    token: 'MOLANG',
+                    line: token.line
                 }
             }
         }else if(token.token == 'STRING'){
             return {
                 value: '\'' + token.value + '\'',
-                token: 'MOLANG'
+                token: 'MOLANG',
+                line: token.line
             }
         }else if(token.token == 'MOLANG'){
             return {
                 value: token.value,
-                token: 'MOLANG'
+                token: 'MOLANG',
+                line: token.line
             }
         }else if(token.token == 'FLAG'){
             return {
                 value: `q.actor_property('frw:${token.value}')`,
-                token: 'MOLANG'
+                token: 'MOLANG',
+                line: token.line
             }
         }else if(token.token == 'NAME'){
             if(dynamicFlags[token.value]){
                 return {
                     value: dynamicFlags[token.value],
-                    token: 'MOLANG'
+                    token: 'MOLANG',
+                    line: token.line
                 }
             }
         }
 
         return {
-            value: 'idk',
-            token: 'MOLANG'
+            value: 'ERROR',
+            token: 'MOLANG',
+            line: token.line
         }
     }
 
@@ -606,7 +627,8 @@
 
             token = {
                 value: '(' + operations[operation].toMolang(params) + ')',
-                token: 'MOLANG'
+                token: 'MOLANG',
+                line: token.line
             };        
         }else if(token.token == 'CALL'){
             const cName = token.value[0].value;
@@ -614,12 +636,14 @@
 
             token = {
                 value: '(' + getFunction(cName, cParams) + ')',
-                token: 'MOLANG'
+                token: 'MOLANG',
+                line: token.line
             };
         }else {
             token = {
                 value: '(' + tokenToMolang(token).value + ')',
-                token: 'MOLANG'
+                token: 'MOLANG',
+                line: token.line
             };
         }
         
@@ -679,11 +703,11 @@
                 if(tree[i].token == 'ASSIGN'){
                     if(tree[i].value[0].value == 'dyn' && tree[i].value[0].token == 'KEYWORD'){
                         if(dynamicFlags[tree[i].value[1].value]){
-                            return new Error(`Dynamic flag '${tree[i].value[1].value}' already exists!`)
+                            return new Error(`Dynamic flag '${tree[i].value[1].value}' already exists!`, tree[i].value[0].line)
                         }
 
                         if(tree[i].value[2].token != 'MOLANG'){
-                            return new Error(`Dynamic flag '${tree[i].value[1].value}' can only be assigned to molang! It was assigned to '${tree[i].value[2].token}'.`)
+                            return new Error(`Dynamic flag '${tree[i].value[1].value}' can only be assigned to molang! It was assigned to '${tree[i].value[2].token}'.`, tree[i].value[0].line)
                         }
 
                         dynamicFlags[tree[i].value[1].value] = tree[i].value[2].value;
@@ -730,7 +754,7 @@
                     if(tree[i].token == 'ASSIGN'){
                         if(tree[i].value[0].token == 'FLAG'){
                             if(tree[i].value[1].token != 'BOOLEAN'){
-                                return new Error(`fFlag '${tree[i].value[0].value}' can only be assigned to a boolean value! It was assigned to '${tree[i].value[1].token}'.`)
+                                return new Error(`fFlag '${tree[i].value[0].value}' can only be assigned to a boolean value! It was assigned to '${tree[i].value[1].token}'.`, tree[i].line)
                             }
 
                             let deep = indexFlag(tree[i].value[1].value);
@@ -796,7 +820,7 @@
             for(let i = 0; i < tree.length; i++){
                 if(tree[i].token == 'DEFINITION'){
                     if(functions[tree[i].value[0].value]){
-                        return new Error(`Function '${tree[i].value[1].value}' already exists!`)
+                        return new Error(`Function '${tree[i].value[1].value}' already exists!`, tree[i].line)
                     }
 
                     functions[tree[i].value[0].value] = tree[i].value[1].value;
@@ -860,7 +884,7 @@
                     pTypes.push(params[i].token);
                 }
 
-                return new Error(`Can not do operation ${expression.value[0].value} between types ${pTypes.toString()}!`)
+                return new Error(`Can not do operation ${expression.value[0].value} between types ${pTypes.toString()}!`, expression.value[0].line)
             }
 
             return optimizeOperation(expression)
@@ -1108,12 +1132,12 @@
                     const params = value[i].value.slice(1);
 
                     if(!doesFunctionExist(name) && !functionNames.includes(name)){
-                        return new Error(`Function ${name} does not exist!`)
+                        return new Error(`Function ${name} does not exist!`, value[i].line)
                     }
 
                     if(doesFunctionExist(name)){
                         if(!doesFunctionExistWithTemplate(name, params)){
-                            return new Error(`Function ${name} does not exist with template!`)
+                            return new Error(`Function ${name} does not exist with template!`, value[i].line)
                         }
 
                         let entity = getFunction(name, params);
