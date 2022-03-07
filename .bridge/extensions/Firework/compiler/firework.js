@@ -1231,7 +1231,11 @@
         for(const i in functionNames){
             const name = functionNames[i];
 
-            compileCodeBlock(name, functions[name]);
+            let deep = compileCodeBlock(name, functions[name]);
+
+            if(deep instanceof Error){
+                return deep
+            }
         }
 
         worldRuntime['minecraft:entity'].events.frwb_delay = {
@@ -2040,6 +2044,108 @@
         return tokens
     }
 
+    /* 
+        INTEGER
+        SYMBOL
+        KEYWORD
+        BOOLEAN
+        NAME
+        STRING
+        BLOCK
+        FLAG
+        MOLANG
+        ARROW
+        CALL
+        EXPRESSION
+        ASSIGN
+        IF
+        DELAY
+        DEFINITON
+    */
+
+    function validateTree(tokens, gloabalScope){
+        for(let l = 0; l < tokens.length; l++){
+            let deep = null;
+
+            switch(tokens[l].token){
+                case 'BLOCK':
+                    return new Error('Blocks may not exist by themselves!', tokens[l].line)
+                case 'DEFINITION':
+                    if(!gloabalScope){
+                        return new Error('Can\'t define function not in the global scope!', tokens[l].line)
+                    }
+
+                    deep = validateTree(tokens[l].value[1].value, false);
+
+                    if(deep instanceof Error){
+                        return deep
+                    }
+
+                    break
+                case 'ASSIGN':
+                    if(gloabalScope){
+                        if(tokens[l].value[0].token == 'FLAG'){
+                            return new Error('Can\'t assign flags in the global scope!', tokens[l].line)
+                        }
+                    }
+                    break
+                case 'IF':
+                    if(gloabalScope){
+                        return new Error('Can\'t use if statements in the global scope!', tokens[l].line)
+                    }
+
+                    deep = validateTree(tokens[l].value[1].value, false);
+
+                    if(deep instanceof Error){
+                        return deep
+                    }
+                    
+                    break
+                case 'DELAY':
+                    if(gloabalScope){
+                        return new Error('Can\'t use delay statements in the global scope!', tokens[l].line)
+                    }
+
+                    deep = validateTree(tokens[l].value[1].value, false);
+
+                    if(deep instanceof Error){
+                        return deep
+                    }
+                    
+                    break
+                case 'CALL':
+                    if(gloabalScope){
+                        return new Error('Can\'t use calls in the global scope!', tokens[l].line)
+                    }
+                    break
+                case 'EXPRESSION':
+                    return new Error('Expressions may not exist by themselves!', tokens[l].line)
+                case 'INTEGER':
+                    return new Error('Integers may not exist by themselves!', tokens[l].line)
+                case 'SYMBOL':
+                    return new Error('Symbols may not exist by themselves!', tokens[l].line)
+                case 'KEYWORD':
+                    return new Error('Keywords may not exist by themselves!', tokens[l].line)
+                case 'BOOLEAN':
+                    return new Error('Booleans may not exist by themselves!', tokens[l].line)
+                case 'NAME':
+                    return new Error('Names may not exist by themselves!', tokens[l].line)
+                case 'STRING':
+                    return new Error('Strings may not exist by themselves!', tokens[l].line)
+                case 'FLAG':
+                    return new Error('Flags may not exist by themselves!', tokens[l].line)
+                case 'MOLANG':
+                    return new Error('Molangs may not exist by themselves!', tokens[l].line)
+                case 'ARROW':
+                    return new Error('Arrows may not exist by themselves!', tokens[l].line)
+                default:
+                    return new Error('Unknown token type: ' + tokens[l].token, tokens[l].line)
+            }
+        }
+
+        return tokens
+    }
+
     function GenerateETree(tokens){
         tokens = splitLines(tokens);
 
@@ -2118,6 +2224,12 @@
             }else {
                 tokens[l] = tokens[l][0];
             }
+        }
+
+        tokens = validateTree(tokens, true);
+
+        if(tokens instanceof Error){
+            return tokens
         }
 
         return tokens

@@ -584,7 +584,11 @@ export function Compile(tree, config, source){
     for(const i in functionNames){
         const name = functionNames[i]
 
-        compileCodeBlock(name, functions[name])
+        let deep = compileCodeBlock(name, functions[name])
+
+        if(deep instanceof Backend.Error){
+            return deep
+        }
     }
 
     worldRuntime['minecraft:entity'].events.frwb_delay = {
