@@ -13,3 +13,5 @@ item.fl:right=Right
 tile.fl:ground.name=Ground
 tile.fl:question.name=Question
 item.fl:item_tag_test=Item Tag Test
+item.spawn_egg.entity.fl:plam_tree_gen.name=Spawn Palm Tree Gen
+entity.fl:plam_tree_gen.name=Palm Tree Gen

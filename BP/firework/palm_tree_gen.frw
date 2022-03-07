@@ -1,0 +1,72 @@
+func trunc => {
+    say("trunc")
+
+    $xlean = false
+
+    if(rand()) => {
+        $xlean = true
+    }
+
+    $ylean = false
+
+    if(rand()) => {
+        $ylean = true
+    }
+
+    delay(1) => {
+        rc("fill ~ ~ ~ ~ ~2 ~ log 3")
+        move("~ ~3 ~")
+
+        if($xlean) => {
+            say("xlean")
+        }
+
+        if(!$xlean) => {
+            say("!xlean")
+        }
+
+        if(!$xlean) => {
+            move("~-1 ~ ~")
+        }
+
+        if($xlean) => {
+            move("~1 ~ ~")
+        }
+
+        if(!$ylean) => {
+            move("~ ~ ~-1")
+        }
+
+        if($ylean) => {
+            move("~ ~ ~1")
+        }
+
+        rc("fill ~ ~-1 ~ ~ ~1 ~ log 3")
+        move("~ ~2 ~")
+
+        if(!$xlean) => {
+            move("~-1 ~ ~")
+        }
+
+        if($xlean) => {
+            move("~1 ~ ~")
+        }
+
+        if(!$ylean) => {
+            move("~ ~ ~-1")
+        }
+
+        if($ylean) => {
+            move("~ ~ ~1")
+        }
+
+        rc("fill ~ ~-1 ~ ~ ~ ~ log 3")
+        move("~ ~1 ~")
+    }
+}
+
+func start => {
+    say("start")
+
+    trunc()
+}
