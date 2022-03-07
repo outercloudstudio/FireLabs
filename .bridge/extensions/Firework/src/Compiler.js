@@ -521,7 +521,7 @@ export function Compile(tree, config, source){
 
                 let triggerCommands = []
 
-                for(let j = 0; j < 3; j++){
+                for(let j = 0; j < config.delayChannels; j++){
                     triggerCommands.push(`event entity @s[tag=!frwb_delay_added] frwb_delay_trigger_channel_${j}_${delayID}`)
 
                     worldRuntime['minecraft:entity'].events[`frwb_delay_trigger_channel_${j}_${delayID}`] = {

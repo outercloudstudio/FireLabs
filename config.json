@@ -36,7 +36,12 @@
 					"packName": "FireLabs"
 				}
 			],
-			"firework"
+			[
+				"firework",
+				{
+					"delayChannels": 3
+				}
+			]
 		]
 	}
 }

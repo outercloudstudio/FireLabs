@@ -1168,7 +1168,7 @@
 
                     let triggerCommands = [];
 
-                    for(let j = 0; j < 3; j++){
+                    for(let j = 0; j < config.delayChannels; j++){
                         triggerCommands.push(`event entity @s[tag=!frwb_delay_added] frwb_delay_trigger_channel_${j}_${delayID}`);
 
                         worldRuntime['minecraft:entity'].events[`frwb_delay_trigger_channel_${j}_${delayID}`] = {
@@ -2111,7 +2111,7 @@
                     if(deep instanceof Error){
                         return deep
                     }
-                    
+
                     break
                 case 'CALL':
                     if(gloabalScope){
@@ -2538,9 +2538,15 @@
 
     								console.log(filePath + ' : ' + script);
 
-    								const compiled = Compile(tree, {
+    								let config = {
     									delayChannels: 3  
-    								}, fileContent);
+    								};
+
+    								if(options.delayChannels){
+    									config.delayChannels = options.delayChannels;
+    								}
+
+    								const compiled = Compile(tree, config, fileContent);
 
     								if(compiled instanceof Error){
     									throw compiled.message + ' on line ' + tree.line + ' in ' + script
