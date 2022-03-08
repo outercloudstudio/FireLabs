@@ -134,6 +134,12 @@ export function Compile(tree, config, source){
                     if(deep instanceof Backend.Error){
                         return deep
                     }
+                }else if(tree[i].token == 'ELSE'){
+                    let deep = searchForFlags(tree[i].value[0])
+
+                    if(deep instanceof Backend.Error){
+                        return deep
+                    }
                 }else if(tree[i].token == 'DELAY'){
                     let deep = searchForFlags(tree[i].value[1].value)
 
@@ -283,6 +289,12 @@ export function Compile(tree, config, source){
                 if(deep instanceof Backend.Error){
                     return deep
                 }
+            }else if(tree[i].token == 'ELSE'){
+                let deep = searchForExpressions(tree[i].value[0].value)
+
+                if(deep instanceof Backend.Error){
+                    return deep
+                }
             }else if(tree[i].token == 'DELAY'){
                 let deep = undefined
 
@@ -351,6 +363,12 @@ export function Compile(tree, config, source){
                 tree[i].value[0] = indexDynamicValues(Backend.uuidv4(), tree[i].value[0])
 
                 deep = searchForDyncamicValues(tree[i].value[1].value)
+
+                if(deep instanceof Backend.Error){
+                    return deep
+                }
+            }else if(tree[i].token == 'ELSE'){
+                deep = searchForDyncamicValues(tree[i].value[0].value)
 
                 if(deep instanceof Backend.Error){
                     return deep
@@ -515,6 +533,12 @@ export function Compile(tree, config, source){
                 compileCodeBlock('frwb_' + valueID, value[i].value[1].value)
 
                 commands.push(`event entity @s[tag=frwb_dv_${valueID}] frw_frwb_${valueID}`)
+            }else if(value[i].token == 'ELSE'){
+                const valueID = value[i - 1].value[0].value
+
+                compileCodeBlock('frwb_else_' + valueID, value[i].value[0].value)
+
+                commands.push(`event entity @s[tag=!frwb_dv_${valueID}] frw_frwb_else_${valueID}`)
             }else if(value[i].token == 'DELAY'){
                 const delayID = Backend.uuidv4()
                 const delay = Native.tokenToUseable(value[i].value[0])

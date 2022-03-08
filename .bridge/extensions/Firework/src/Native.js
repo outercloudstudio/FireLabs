@@ -70,7 +70,7 @@ export const functions = {
                 params: [],
         
                 asMolang (params) {
-                    return `(math.random(0, 1) >= 0.5)`
+                    return `(math.random(0, 1) >= 0.23)`
                 },
 
                 dynamic: true,
@@ -82,7 +82,7 @@ export const functions = {
                 ],
         
                 asMolang (params) {
-                    return `(math.random(0, 1) >= ${1 / variableToMolang(params[0]).value * 0.5})`
+                    return `(math.random(0, 1) >= ${1 / variableToMolang(params[0]).value * 0.23})`
                 },
 
                 dynamic: true

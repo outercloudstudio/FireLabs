@@ -19,45 +19,35 @@ func trunc => {
 
         if($xlean) => {
             say("xlean")
-        }
-        
-        else => {
+        }else => {
             say("!xlean")
-        }
-
-        if(!$xlean) => {
-            move("~-1 ~ ~")
         }
 
         if($xlean) => {
             move("~1 ~ ~")
-        }
-
-        if(!$ylean) => {
-            move("~ ~ ~-1")
+        }else => {
+            move("~-1 ~ ~")
         }
 
         if($ylean) => {
             move("~ ~ ~1")
+        }else => {
+            move("~ ~ ~-1")
         }
 
         rc("fill ~ ~-1 ~ ~ ~1 ~ log 3")
         move("~ ~2 ~")
 
-        if(!$xlean) => {
-            move("~-1 ~ ~")
-        }
-
         if($xlean) => {
             move("~1 ~ ~")
-        }
-
-        if(!$ylean) => {
-            move("~ ~ ~-1")
+        }else => {
+            move("~-1 ~ ~")
         }
 
         if($ylean) => {
             move("~ ~ ~1")
+        }else => {
+            move("~ ~ ~-1")
         }
 
         rc("fill ~ ~-1 ~ ~ ~ ~ log 3")

@@ -94,7 +94,7 @@
                     params: [],
             
                     asMolang (params) {
-                        return `(math.random(0, 1) >= 0.5)`
+                        return `(math.random(0, 1) >= 0.23)`
                     },
 
                     dynamic: true,
@@ -106,7 +106,7 @@
                     ],
             
                     asMolang (params) {
-                        return `(math.random(0, 1) >= ${1 / variableToMolang(params[0]).value * 0.5})`
+                        return `(math.random(0, 1) >= ${1 / variableToMolang(params[0]).value * 0.23})`
                     },
 
                     dynamic: true
@@ -835,6 +835,12 @@
                         if(deep instanceof Error){
                             return deep
                         }
+                    }else if(tree[i].token == 'ELSE'){
+                        let deep = searchForFlags(tree[i].value[0]);
+
+                        if(deep instanceof Error){
+                            return deep
+                        }
                     }else if(tree[i].token == 'DELAY'){
                         let deep = searchForFlags(tree[i].value[1].value);
 
@@ -982,6 +988,12 @@
                     if(deep instanceof Error){
                         return deep
                     }
+                }else if(tree[i].token == 'ELSE'){
+                    let deep = searchForExpressions(tree[i].value[0].value);
+
+                    if(deep instanceof Error){
+                        return deep
+                    }
                 }else if(tree[i].token == 'DELAY'){
                     let deep = undefined;
 
@@ -1050,6 +1062,12 @@
                     tree[i].value[0] = indexDynamicValues(uuidv4(), tree[i].value[0]);
 
                     deep = searchForDyncamicValues(tree[i].value[1].value);
+
+                    if(deep instanceof Error){
+                        return deep
+                    }
+                }else if(tree[i].token == 'ELSE'){
+                    deep = searchForDyncamicValues(tree[i].value[0].value);
 
                     if(deep instanceof Error){
                         return deep
@@ -1214,6 +1232,12 @@
                     compileCodeBlock('frwb_' + valueID, value[i].value[1].value);
 
                     commands.push(`event entity @s[tag=frwb_dv_${valueID}] frw_frwb_${valueID}`);
+                }else if(value[i].token == 'ELSE'){
+                    const valueID = value[i - 1].value[0].value;
+
+                    compileCodeBlock('frwb_else_' + valueID, value[i].value[0].value);
+
+                    commands.push(`event entity @s[tag=!frwb_dv_${valueID}] frw_frwb_else_${valueID}`);
                 }else if(value[i].token == 'DELAY'){
                     const delayID = uuidv4();
                     const delay = tokenToUseable(value[i].value[0]);
@@ -2268,8 +2292,6 @@
           return tokens
         }
 
-        console.log(JSON.parse(JSON.stringify(tokens)));
-
         tokens = buildCompoundTypes(tokens);
 
         if(tokens instanceof Error){
@@ -2312,15 +2334,11 @@
             return tokens
         }
 
-        console.log(JSON.parse(JSON.stringify(tokens)));
-
         tokens = buildIfAndDelay(tokens);
 
         if(tokens instanceof Error){
             return tokens
         }
-
-        console.log(JSON.parse(JSON.stringify(tokens)));
 
         tokens = buildFunctions(tokens);
 
