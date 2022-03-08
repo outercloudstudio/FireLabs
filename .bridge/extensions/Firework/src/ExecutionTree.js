@@ -368,7 +368,7 @@ function buildExpressionsSingle(tokens){
             let prevToken = tokens[i - 1]
 
             if(prevToken && nextToken){
-                if(!(nextToken.token == 'INTEGER' || nextToken.token == 'EXPRESSION') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION')){
+                if(!(nextToken.token == 'INTEGER' || nextToken.token == 'EXPRESSION' || nextToken.token == 'CALL') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'CALL')){
                     return new Backend.Error(`Can not do operation '${token.value}' with '${nextToken.token}' and '${prevToken.token}'!`, token.line)
                 }
 
@@ -388,7 +388,7 @@ function buildExpressionsSingle(tokens){
             let prevToken = tokens[i - 1]
 
             if(prevToken && nextToken){
-                if(!(nextToken.token == 'INTEGER' || nextToken.token == 'EXPRESSION') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION')){
+                if(!(nextToken.token == 'INTEGER' || nextToken.token == 'EXPRESSION' || nextToken.token == 'CALL') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'CALL')){
                     return new Backend.Error(`Can not do operation '${token.value}' with '${nextToken.token}' and '${prevToken.token}'!`, token.line)
                 }
                 
@@ -402,12 +402,13 @@ function buildExpressionsSingle(tokens){
     //Create Expressions !
     for(let i = 0; i < tokens.length; i++){
         const token = tokens[i]
+        const nextToken = tokens[i + 1]
 
-        if(token.token == 'SYMBOL' && token.value == '!'){
+        if(token.token == 'SYMBOL' && token.value == '!' && (!nextToken || !(nextToken.token == 'SYMBOL' && nextToken.value == '='))){
             let nextToken = tokens[i + 1]
 
             if(nextToken){
-                if(!(nextToken.token == 'EXPRESSION' || nextToken.token == 'FLAG' || nextToken.token == 'BOOLEAN' || nextToken.token == 'MOLANG')){
+                if(!(nextToken.token == 'EXPRESSION' || nextToken.token == 'FLAG' || nextToken.token == 'BOOLEAN' || nextToken.token == 'MOLANG' || nextToken.token == 'CALL')){
                     return new Backend.Error(`Can not do operation '${token.value}' with '${nextToken.token}'!`, token.line)
                 }
 
@@ -416,12 +417,12 @@ function buildExpressionsSingle(tokens){
         }
     }
 
-    //Create Expressions == > < >= <=
+    //Create Expressions == != > < >= <=
     for(let i = 0; i < tokens.length; i++){
         const token = tokens[i]
         const nextToken = tokens[i + 1]
 
-        if(token.token == 'SYMBOL' && (token.value == '=' || token.value == '>' || token.value == '<')){
+        if(token.token == 'SYMBOL' && (token.value == '=' || token.value == '!' || token.value == '>' || token.value == '<')){
             let prevToken = tokens[i - 1]
 
             if(prevToken && nextToken){
@@ -429,7 +430,7 @@ function buildExpressionsSingle(tokens){
                     let nextNextToken = tokens[i + 2]
 
                     if(token.value == '>' || token.value == '<'){
-                        if(!(nextNextToken.token == 'INTEGER' || nextNextToken.token == 'EXPRESSION' || nextNextToken.token == 'NAME') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'NAME')){
+                        if(!(nextNextToken.token == 'INTEGER' || nextNextToken.token == 'EXPRESSION' || nextNextToken.token == 'NAME' || nextNextToken.token == 'CALL') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'NAME' || prevToken.token == 'CALL')){
                             return new Backend.Error(`Can not do operation '${token.value + nextToken.value}' with '${nextNextToken.token}' and '${prevToken.token}'!`, token.line)
                         }
                         
@@ -439,7 +440,7 @@ function buildExpressionsSingle(tokens){
 
                         i--
                     }else{
-                        if(!(nextNextToken.token == 'INTEGER' || nextNextToken.token == 'EXPRESSION' || nextNextToken.token == 'BOOLEAN' || nextNextToken.token == 'FLAG' || nextNextToken.token == 'MOLANG' || nextNextToken.token == 'NAME') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'BOOLEAN' || prevToken.token == 'FLAG' || prevToken.token == 'MOLANG' || prevToken.token == 'NAME')){
+                        if(!(nextNextToken.token == 'INTEGER' || nextNextToken.token == 'EXPRESSION' || nextNextToken.token == 'BOOLEAN' || nextNextToken.token == 'FLAG' || nextNextToken.token == 'MOLANG' || nextNextToken.token == 'NAME'  || nextNextToken.token == 'CALL') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'BOOLEAN' || prevToken.token == 'FLAG' || prevToken.token == 'MOLANG' || prevToken.token == 'NAME' || prevToken.token == 'CALL')){
                             return new Backend.Error(`Can not do operation '${token.value + nextToken.value}' with '${nextNextToken.token}' and '${prevToken.token}'!`, token.line)
                         }
 
@@ -450,7 +451,7 @@ function buildExpressionsSingle(tokens){
                         i--
                     }
                 }else if(token.value == '>' || token.value == '<'){
-                    if(!(nextToken.token == 'INTEGER' || nextToken.token == 'EXPRESSION' || nextNextToken.token == 'NAME') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'NAME')){
+                    if(!(nextToken.token == 'INTEGER' || nextToken.token == 'EXPRESSION' || nextNextToken.token == 'NAME' || nextNextToken.token == 'CALL') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'NAME' || prevToken.token == 'CALL')){
                         return new Backend.Error(`Can not do operation '${token.value}' with '${nextToken.token}' and '${prevToken.token}'!`, token.line)
                     }
 
@@ -693,20 +694,27 @@ function buildIfAndDelay(tokens){
 
         //Build Ifs And Delays
         for(let i = 0; i < tokens[l].length; i++){
-            const token = tokens[l][i]
-            const nextToken = tokens[l][i + 1]
-            const nextNextToken = tokens[l][i + 2]
-            const nextNextNextToken = tokens[l][i + 3]
-            const nextNextNextNextToken = tokens[l][i + 4]
-            const nextNextNextNextNextToken = tokens[l][i + 5]
+            const token = tokens[l][i] //if
+            const nextToken = tokens[l][i + 1] //(
+            const nextNextToken = tokens[l][i + 2] //Expression
+            const nextNextNextToken = tokens[l][i + 3] //)
+            const nextNextNextNextToken = tokens[l][i + 4] // =>
+            const nextNextNextNextNextToken = tokens[l][i + 5] // Block
 
             if(token.token == 'KEYWORD' && token.value == 'if' && nextToken && nextToken.token == 'SYMBOL' && nextToken.value == '(' && nextNextToken && nextNextNextToken && nextNextNextToken.token == 'SYMBOL' && nextNextNextToken.value == ')' && nextNextNextNextToken && nextNextNextNextToken.token == 'ARROW' && nextNextNextNextNextToken && nextNextNextNextNextToken.token == 'BLOCK'){
                 if(!(nextNextToken.token == 'FLAG' || nextNextToken.token == 'NAME' || nextNextToken.token == 'BOOLEAN' || nextNextToken.token == 'EXPRESSION' || nextNextToken.token == 'MOLANG' || nextNextToken.token == 'CALL')){
                     return new Backend.Error(`If condition can't be ${nextNextToken.token}!`, token.line)
                 }
-                
+
                 for(let j = 0; j < nextNextNextNextNextToken.value.length; j++){
-                    nextNextNextNextNextToken.value[j] = nextNextNextNextNextToken.value[j][0]
+                    if(nextNextNextNextNextToken.value[j].length != 1){
+                        return new Backend.Error('Unexpected symbol (06A) ' + nextNextNextNextNextToken.value[j][0].value, nextNextNextNextNextToken.value[j][0].line)
+                    }else if(nextNextNextNextNextToken.value[j].length == 0){
+                        nextNextNextNextNextToken.value[j].splice(l, 1)
+                        l--
+                    }else{
+                        nextNextNextNextNextToken.value[j] = nextNextNextNextNextToken.value[j][0]
+                    }
                 }
                 
                 tokens[l].splice(i, 6, { value: [nextNextToken, nextNextNextNextNextToken], token: 'IF', line: token.line })
@@ -725,9 +733,16 @@ function buildIfAndDelay(tokens){
                 if(nextNextToken.token != 'INTEGER'){
                     return new Backend.Error(`Delay must be an integer!`, token.line)
                 }
-                
+
                 for(let j = 0; j < nextNextNextNextNextToken.value.length; j++){
-                    nextNextNextNextNextToken.value[j] = nextNextNextNextNextToken.value[j][0]
+                    if(nextNextNextNextNextToken.value[j].length != 1){
+                        return new Backend.Error('Unexpected symbol (06B) ' + nextNextNextNextNextToken.value[j][0].value, nextNextNextNextNextToken.value[j][0].line)
+                    }else if(nextNextNextNextNextToken.value[j].length == 0){
+                        nextNextNextNextNextToken.value[j].splice(l, 1)
+                        l--
+                    }else{
+                        nextNextNextNextNextToken.value[j] = nextNextNextNextNextToken.value[j][0]
+                    }
                 }
                 
                 tokens[l].splice(i, 6, { value: [nextNextToken, nextNextNextNextNextToken], token: 'DELAY', line: token.line })
@@ -910,6 +925,8 @@ export function GenerateETree(tokens){
       return tokens
     }
 
+    console.log(JSON.parse(JSON.stringify(tokens)))
+
     tokens = buildCompoundTypes(tokens)
 
     if(tokens instanceof Backend.Error){
@@ -952,11 +969,15 @@ export function GenerateETree(tokens){
         return tokens
     }
 
+    console.log(JSON.parse(JSON.stringify(tokens)))
+
     tokens = buildIfAndDelay(tokens)
 
     if(tokens instanceof Backend.Error){
         return tokens
     }
+
+    console.log(JSON.parse(JSON.stringify(tokens)))
 
     tokens = buildFunctions(tokens)
 

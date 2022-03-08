@@ -13,15 +13,13 @@ func trunc => {
         $ylean = true
     }
 
-    delay(1) => {
+    delay(1) => { 
         rc("fill ~ ~ ~ ~ ~2 ~ log 3")
-        move("~ ~3 ~")
+        move("~ ~3 ~")  
 
         if($xlean) => {
             say("xlean")
-        }
-
-        if(!$xlean) => {
+        }else => {
             say("!xlean")
         }
 
