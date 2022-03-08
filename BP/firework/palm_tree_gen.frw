@@ -19,7 +19,9 @@ func trunc => {
 
         if($xlean) => {
             say("xlean")
-        }else => {
+        }
+        
+        else => {
             say("!xlean")
         }
 

@@ -1925,7 +1925,7 @@
 
                     groups.unshift(prevToken);
 
-                    tokens.splice(i - 1, endIndex - i + 2, { value: groups, token: 'CALL' });
+                    tokens.splice(i - 1, endIndex - i + 2, { value: groups, token: 'CALL', line: prevToken.line });
                 }
             }
         }
@@ -2023,6 +2023,27 @@
                     }
                     
                     tokens[l].splice(i, 6, { value: [nextNextToken, nextNextNextNextNextToken], token: 'IF', line: token.line });
+                }
+            }
+            
+            for(let i = 0; i < tokens[l].length; i++){
+                const token = tokens[l][i]; //else
+                const nextToken = tokens[l][i + 1]; // =>
+                const nextNextToken = tokens[l][i + 2]; //BLOCK
+
+                if(token.token == 'KEYWORD' && token.value == 'else' && nextToken && nextToken.token == 'ARROW' && nextNextToken && nextNextToken.token == 'BLOCK'){
+                    for(let j = 0; j < nextNextToken.value.length; j++){
+                        if(nextNextToken.value[j].length != 1){
+                            return new Error('Unexpected symbol (06C) ' + nextNextToken.value[j][0].value, nextNextToken.value[j][0].line)
+                        }else if(nextNextToken.value[j].length == 0){
+                            nextNextToken.value[j].splice(l, 1);
+                            l--;
+                        }else {
+                            nextNextToken.value[j] = nextNextToken.value[j][0];
+                        }
+                    }
+                    
+                    tokens[l].splice(i, 6, { value: [nextNextToken], token: 'ELSE', line: token.line });
                 }
             }
 
@@ -2130,6 +2151,7 @@
         IF
         DELAY
         DEFINITON
+        ELSE
     */
 
     function validateTree(tokens, gloabalScope){
@@ -2170,6 +2192,22 @@
                     }
                     
                     break
+                case 'ELSE':
+                        if(gloabalScope){
+                            return new Error('Can\'t use else statements in the global scope!', tokens[l].line)
+                        }
+
+                        if(!tokens[l - 1] || tokens[l - 1].token != 'IF'){
+                            return new Error('Else statements must be after an if statement!', tokens[l].line)
+                        }
+        
+                        deep = validateTree(tokens[l].value[0].value, false);
+        
+                        if(deep instanceof Error){
+                            return deep
+                        }
+                        
+                        break
                 case 'DELAY':
                     if(gloabalScope){
                         return new Error('Can\'t use delay statements in the global scope!', tokens[l].line)
