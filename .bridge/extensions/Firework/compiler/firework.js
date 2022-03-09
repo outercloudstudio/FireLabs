@@ -2572,6 +2572,7 @@
     							components.forEach(component => {
     								if(component.startsWith('frw:')){
     									requiredScripts.push(component.substring(4));
+    									console.log(content['minecraft:entity'].components[component]);
     								}
     							});
 

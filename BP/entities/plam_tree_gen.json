@@ -13,7 +13,9 @@
 			}
 		},
 		"components": {
-			"frw:palm_tree_gen": {}
+			"frw:palm_tree_gen": {
+				"generate": false
+			}
 		},
 		"events": {
 			"despawn": {
