@@ -1,0 +1,23 @@
+func start => {
+    move("~ 70 ~")
+
+    fif(?"q.position(1) == 70") => {
+        say("Yeah!")
+    }else => {
+        say("nope")
+    }
+
+    if(?"q.position(1) == 70") => {
+        say("Yeah!2")
+    }else => {
+        say("nope2")
+    }
+
+    move("~ 69 ~")
+
+    if(?"q.position(1) == 70") => {
+        say("Yeah!3")
+    }else => {
+        say("nope3")
+    }
+}
