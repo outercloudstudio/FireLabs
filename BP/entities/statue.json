@@ -2,7 +2,7 @@
 	"format_version": "1.16.0",
 	"minecraft:entity": {
 		"description": {
-			"identifier": "fl:fif",
+			"identifier": "fl:statue",
 			"is_spawnable": true,
 			"is_summonable": true,
 			"is_experimental": false
@@ -13,7 +13,7 @@
 			}
 		},
 		"components": {
-			"frw:fif": {}
+			"frw:statue": {}
 		},
 		"events": {
 			"despawn": {

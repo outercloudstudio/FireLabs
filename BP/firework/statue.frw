@@ -1,0 +1,98 @@
+func place => {
+    fif($metalic) => {
+        fif($rare) => {
+            rc("setblock ~ ~ ~ iron_block")
+        }else => {
+            rc("setblock ~ ~ ~ copper_block")
+        }
+    }else => {
+        fif($rare) => {
+            rc("setblock ~ ~ ~ calcite")
+        }else => {
+            rc("setblock ~ ~ ~ stonebrick")
+        }
+    }
+}
+
+func start => {
+    $metalic = false
+    $rare = false
+    $morerare = false
+
+    fif(rand()) => {
+        $metalic = true
+    }
+
+    fif(rand()) => {
+        $rare = true
+    }
+
+    fif(rand()) => {
+        $morerare = true
+    }
+
+    delay(2) => {
+        place()
+        move("~-1 ~ ~")
+        place()
+        move("~2 ~ ~")
+        place()
+        move("~-1 ~ ~1")
+        place()
+        move("~ ~ ~-2")
+        place()
+        move("~-1 ~ ~")
+        place()
+        move("~2 ~ ~")
+        place()
+        move("~ ~ ~2")
+        place()
+        move("~-2 ~ ~")
+        place()
+        move("~1 ~1 ~-1")
+
+        place()
+        move("~-1 ~ ~")
+        place()
+        move("~2 ~ ~")
+        place()
+        move("~-1 ~ ~1")
+        place()
+        move("~ ~ ~-2")
+        place()
+        move("~-1 ~ ~")
+        place()
+        move("~2 ~ ~")
+        place()
+        move("~ ~ ~2")
+        place()
+        move("~-2 ~ ~")
+        place()
+        move("~1 ~1 ~-1")
+
+        place()
+        move("~ ~1 ~")
+        place()
+
+        if(rand()) => {
+            if(rand()) => {
+                move("~-1 ~ ~")
+                place()
+                move("~2 ~ ~")
+                place()
+            }else => {
+                move("~ ~ ~-1")
+                place()
+                move("~ ~ ~2")
+                place()
+            }
+        }
+
+        if(rand()) => {
+            move("~ ~1 ~")
+            place()
+        }
+
+        rc("event entity @s despawn")
+    }
+}

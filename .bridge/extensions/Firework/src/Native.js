@@ -92,6 +92,22 @@ export const functions = {
         supports: 'molang',
         
         returns: 'BOOLEAN'
+    },
+    
+    par: {
+        params: [
+            'BOOLEAN'
+        ],
+
+        asEntity (params) {
+            return {
+                commands:[
+                    'kill @s'
+                ]
+            }
+        },
+
+        supports: 'entity'
     }
 }
 

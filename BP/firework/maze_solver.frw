@@ -1,6 +1,0 @@
-
-func update => {
-    if ($noWall && ?"query.relative_block_has_any_tag(^, ^, ^, 'air')") => {
-        rc("say Who")
-    }
-}
