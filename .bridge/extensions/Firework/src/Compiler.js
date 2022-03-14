@@ -91,6 +91,14 @@ export function Compile(tree, config, source, scriptConfig){
                         if(configConstants[tree[i].value[1].value]){
                             tree.value[1] = configConstants[tree[i].value[1].value]
                         }
+                    }else if(tree[i].value[1].token == 'EXPRESSION'){
+                        let deep = searchForConfigConstants(tree[i].value[1])
+
+                        if(deep instanceof Backend.Error){
+                            return deep
+                        }
+                        
+                        tree[i].value[1] = deep
                     }
                 }else if(tree[i].token == 'DEFINITION'){
                     let deep = searchForConfigConstants(tree[i].value[1].value)
@@ -169,8 +177,6 @@ export function Compile(tree, config, source, scriptConfig){
     //#endregion
 
     //#region NOTE: Static Value Init - Setup if delays
-    console.log(JSON.parse(JSON.stringify(tree)))
-
     function setupIfDelays(tree){
         for(let i = 0; i < tree.length; i++){
             if(tree[i].token == 'DEFINITION'){
@@ -248,8 +254,6 @@ export function Compile(tree, config, source, scriptConfig){
     if(tree instanceof Backend.Error){
         return tree
     }
-
-    console.log(JSON.parse(JSON.stringify(tree)))
     //#endregion
 
     //#region NOTE: Static Value Init - Index Dynamic Flags
@@ -310,8 +314,8 @@ export function Compile(tree, config, source, scriptConfig){
             for(let i = 0; i < tree.length; i++){
                 if(tree[i].token == 'ASSIGN'){
                     if(tree[i].value[0].token == 'FLAG'){
-                        if(tree[i].value[1].token != 'BOOLEAN'){
-                            return new Backend.Error(`fFlag '${tree[i].value[0].value}' can only be assigned to a boolean value! It was assigned to '${tree[i].value[1].token}'.`, tree[i].line)
+                        if(Native.complexTypeToSimpleType(tree[i].value[1].token) != 'BOOLEAN'){
+                            return new Backend.Error(`Flag '${tree[i].value[0].value}' can only be assigned to a boolean value! It was assigned to '${tree[i].value[1].token}'.`, tree[i].line)
                         }
 
                         let deep = indexFlag(tree[i].value[0].value)
@@ -645,49 +649,6 @@ export function Compile(tree, config, source, scriptConfig){
         }
     }
     //#endregion
-    
-    //#region NOTE: Compile Dynamic Values
-    const dynamicValueNames = Object.keys(dynamicValues)
-    
-    for(const i in dynamicValueNames){
-        const name = dynamicValueNames[i]
-
-        outAnimations['animation.firework.backend.' + name] = {
-            loop: true,
-            timeline: {
-                '0.0': [
-                    `/tag @s add frwb_dv_${name}`
-                ]
-            },
-            animation_length: 0.001
-        }
-
-        outAnimations['animation.firework.backend.' + name + '.inverse'] = {
-            loop: true,
-            timeline: {
-                '0.0': [
-                    `/tag @s remove frwb_dv_${name}`
-                ]
-            },
-            animation_length: 0.001
-        }
-
-        worldRuntime['minecraft:entity'].description.animations[name] = 'animation.firework.backend.' + name
-        worldRuntime['minecraft:entity'].description.animations[name + '_inverse'] = 'animation.firework.backend.' + name + '.inverse'
-
-        let scriptData = {}
-        
-        scriptData[name] = Native.variableToMolang(dynamicValues[name]).value
-
-        worldRuntime['minecraft:entity'].description.scripts.animate.push(scriptData)
-
-        scriptData = {}
-
-        scriptData[name + '_inverse'] = '!(' + Native.variableToMolang(dynamicValues[name]).value + ')'
-
-        worldRuntime['minecraft:entity'].description.scripts.animate.push(scriptData)
-    }
-    //#endregion
 
     //#region NOTE: Compile Flags
     const flagNames = Object.keys(flags)
@@ -765,10 +726,88 @@ export function Compile(tree, config, source, scriptConfig){
                     commands.push(`event entity @s frw_${name}`)
                 }
             }else if(value[i].token == 'ASSIGN'){
-                if(value[i].value[1].value == 'true'){
-                    commands.push(`event entity @s frw_${value[i].value[0].value}_true`)
+                if(value[i].value[1].token == 'BOOLEAN'){
+                    if(value[i].value[1].value == 'true'){
+                        commands.push(`event entity @s frw_${value[i].value[0].value}_true`)
+                    }else{
+                        commands.push(`event entity @s frw_${value[i].value[0].value}_false`)
+                    }
                 }else{
-                    commands.push(`event entity @s frw_${value[i].value[0].value}_false`)
+                    console.log('COMPLEX COMPILING FLAG')
+                    console.log(value[i].value[1])
+
+                    let subBlock = [
+                        {
+                            token: 'DELAY',
+                            value: [
+                                {
+                                    token: 'INTEGER',
+                                    value: '5'
+                                },
+                                {
+                                    token: 'BLOCK',
+                                    value: [
+                                        {
+                                            token: 'IF',
+                                            value: [
+                                                indexDynamicValues(Backend.uuidv4(), value[i].value[1]),
+                                                {
+                                                    token: 'BLOCK',
+                                                    value: [
+                                                        {
+                                                            token: 'ASSIGN',
+                                                            value: [
+                                                                {
+                                                                    token: 'FLAG',
+                                                                    value: value[i].value[0].value
+                                                                },
+                                                                {
+                                                                    token: 'BOOLEAN',
+                                                                    value: 'true'
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            token: 'ELSE',
+                                            value: [
+                                                {
+                                                    token: 'BLOCK',
+                                                    value: [
+                                                        {
+                                                            token: 'ASSIGN',
+                                                            value: [
+                                                                {
+                                                                    token: 'FLAG',
+                                                                    value: value[i].value[0].value
+                                                                },
+                                                                {
+                                                                    token: 'BOOLEAN',
+                                                                    value: 'false'
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+
+                    subBlock[0].value[1].value = subBlock[0].value[1].value.concat(value.slice(i + 1))
+                    value.splice(i + 1, value.length - i - 1)
+
+                    const subID = Backend.uuidv4()
+
+                    commands.push(`event entity @s frw_${subID}`)
+
+                    compileCodeBlock(subID, subBlock)
                 }
             }else if(value[i].token == 'IF'){
                 const valueID = value[i].value[0].value
@@ -870,6 +909,49 @@ export function Compile(tree, config, source, scriptConfig){
         run_command: {
             command: delayChannelTicks
         }
+    }
+    //#endregion
+
+    //#region NOTE: Compile Dynamic Values
+    const dynamicValueNames = Object.keys(dynamicValues)
+    
+    for(const i in dynamicValueNames){
+        const name = dynamicValueNames[i]
+
+        outAnimations['animation.firework.backend.' + name] = {
+            loop: true,
+            timeline: {
+                '0.0': [
+                    `/tag @s add frwb_dv_${name}`
+                ]
+            },
+            animation_length: 0.001
+        }
+
+        outAnimations['animation.firework.backend.' + name + '.inverse'] = {
+            loop: true,
+            timeline: {
+                '0.0': [
+                    `/tag @s remove frwb_dv_${name}`
+                ]
+            },
+            animation_length: 0.001
+        }
+
+        worldRuntime['minecraft:entity'].description.animations[name] = 'animation.firework.backend.' + name
+        worldRuntime['minecraft:entity'].description.animations[name + '_inverse'] = 'animation.firework.backend.' + name + '.inverse'
+
+        let scriptData = {}
+        
+        scriptData[name] = Native.variableToMolang(dynamicValues[name]).value
+
+        worldRuntime['minecraft:entity'].description.scripts.animate.push(scriptData)
+
+        scriptData = {}
+
+        scriptData[name + '_inverse'] = '!(' + Native.variableToMolang(dynamicValues[name]).value + ')'
+
+        worldRuntime['minecraft:entity'].description.scripts.animate.push(scriptData)
     }
     //#endregion
 

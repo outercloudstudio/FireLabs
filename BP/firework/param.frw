@@ -1,0 +1,4 @@
+func start => {
+    $mol = ?"q.position(1) > 64"
+    say("done")
+}

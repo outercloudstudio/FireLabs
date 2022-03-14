@@ -1,4 +1,5 @@
 import * as Backend from './Backend.js'
+import * as Native from './Native.js'
 
 function splitLines(tokens){
     let lineCount = 1
@@ -821,7 +822,7 @@ function buildFlagAssignments(tokens){
             const nextNextToken = tokens[l][i + 2]
 
             if(token.token == 'FLAG' && nextToken && nextToken.token == 'SYMBOL' && nextToken.value == '=' && nextNextToken){
-                if(nextNextToken.token != 'BOOLEAN'){
+                if(Native.complexTypeToSimpleType(nextNextToken.token) != 'BOOLEAN'){
                     return new Backend.Error('Can\'t assign flag to ' + nextNextToken.token + '!', token.line)
                 }
                 
@@ -1050,6 +1051,8 @@ export function GenerateETree(tokens){
     if(tokens instanceof Backend.Error){
         return tokens
     }
+
+    console.log(tokens)
 
     return tokens
 }

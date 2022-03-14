@@ -715,3 +715,14 @@ export function variableToMolang(token){
     
     return token
 }
+
+export function complexTypeToSimpleType(type){
+    switch(type){
+        case 'MOLANG':
+            return 'BOOLEAN'
+        case 'FLAG':
+            return 'BOOLEAN'
+        default:
+            return type
+    }
+}
