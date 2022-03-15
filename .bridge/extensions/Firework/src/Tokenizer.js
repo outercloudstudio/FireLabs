@@ -51,7 +51,6 @@ const symbols = [
 const keywords = [
     'if',
     'fif',
-    'dyn',
     'func',
     'delay',
     'else'

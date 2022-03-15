@@ -648,12 +648,6 @@
         }
     }
 
-    let dynamicFlags = {};
-
-    function setDynamicFlags(flags){
-        dynamicFlags = flags;
-    }
-
     function tokenToMolang(token){
         if(token.token == 'INTEGER'){
             return {
@@ -692,14 +686,6 @@
                 value: `q.actor_property('frw:${token.value}')`,
                 token: 'MOLANG',
                 line: token.line
-            }
-        }else if(token.token == 'NAME'){
-            if(dynamicFlags[token.value]){
-                return {
-                    value: dynamicFlags[token.value],
-                    token: 'MOLANG',
-                    line: token.line
-                }
             }
         }
 
@@ -1006,36 +992,6 @@
         }
         //#endregion
 
-        //#region NOTE: Static Value Init - Index Dynamic Flags
-        let dynamicFlags = {};
-
-        function searchForDyncamicFlags(tree){
-            for(let i = 0; i < tree.length; i++){
-                if(tree[i].token == 'ASSIGN'){
-                    if(tree[i].value[0].value == 'dyn' && tree[i].value[0].token == 'KEYWORD'){
-                        if(dynamicFlags[tree[i].value[1].value]){
-                            return new Error(`Dynamic flag '${tree[i].value[1].value}' already exists!`, tree[i].value[0].line)
-                        }
-
-                        if(tree[i].value[2].token != 'MOLANG'){
-                            return new Error(`Dynamic flag '${tree[i].value[1].value}' can only be assigned to molang! It was assigned to '${tree[i].value[2].token}'.`, tree[i].value[0].line)
-                        }
-
-                        dynamicFlags[tree[i].value[1].value] = tree[i].value[2].value;
-                    }
-                }
-            }
-        }
-
-        let deep = searchForDyncamicFlags(tree);
-
-        if(deep instanceof Error){
-            return deep
-        }
-
-        setDynamicFlags(dynamicFlags);
-        //#endregion
-
         //#region NOTE: Dynamic Value Init - Index Flags
         let flags = {};
 
@@ -1073,6 +1029,7 @@
                             if(deep instanceof Error){
                                 return deep
                             }
+
                         }
                     }else if(tree[i].token == 'DEFINITION'){
                         let deep = searchForFlags(tree[i].value[1].value);
@@ -1080,6 +1037,8 @@
                         if(deep instanceof Error){
                             return deep
                         }
+
+                        console.log('DPOST');
                     }else if(tree[i].token == 'IF'){
                         let deep = searchForFlags(tree[i].value[0]);
 
@@ -1099,7 +1058,7 @@
                         if(deep instanceof Error){
                             return deep
                         }
-
+                        
                         deep = searchForFlags(tree[i].value[1].value);
 
                         if(deep instanceof Error){
@@ -1136,13 +1095,13 @@
             }
         }
 
-        deep = searchForFlags(tree);
+        let deep = searchForFlags(tree);
 
         if(deep instanceof Error){
             return deep
         }
         //#endregion
-        
+
         //#region NOTE: Dynamic Value Init - Index Functions
         let functions = {};
 
@@ -1383,19 +1342,6 @@
         if(deep instanceof Error){
             return deep
         }
-
-        const dynamicFlagNames = Object.keys(dynamicFlags);
-
-        for(const i in dynamicFlagNames){
-            const name = dynamicFlagNames[i];
-
-            if(!(name in dynamicValues)){
-                dynamicValues[name] = {
-                    value: dynamicFlags[name],
-                    token: 'MOLANG'
-                };
-            }
-        }
         //#endregion
 
         //#region NOTE: Compile Flags
@@ -1438,7 +1384,7 @@
             };
         }
         //#endregion
-        
+
         //#region NOTE: Compile Code Blocks
         let delayChannelTicks = [];
         
@@ -2364,21 +2310,33 @@
         return tokens
     }
 
-    function buildAsignments(tokens){
+    function buildAssignments(tokens){
         for(let l = 0; l < tokens.length; l++){
-            //Build Asignments
+            //Go Deeper Into Blocks
+            for(let i = 0; i < tokens[l].length; i++){
+                if(tokens[l][i].token == 'BLOCK'){
+                    let deep = buildAssignments(tokens[l][i].value);
+
+                    if(deep instanceof Error){
+                        return deep
+                    }
+
+                    tokens[l][i].value = deep;
+                }
+            }
+
+            //Build Flag Asignments
             for(let i = 0; i < tokens[l].length; i++){
                 const token = tokens[l][i];
                 const nextToken = tokens[l][i + 1];
                 const nextNextToken = tokens[l][i + 2];
-                const nextNextNextToken = tokens[l][i + 3];
 
-                if(token.token == 'KEYWORD' && token.value == 'dyn' && nextToken && nextToken.token == 'NAME' && nextNextToken && nextNextToken.token == 'SYMBOL' && nextNextToken.value == '=' && nextNextNextToken){
-                    if(!(nextNextNextToken.token == 'MOLANG' || nextNextNextToken.token == 'EXPRESSION')){
-                        return new Error(`Dynamic can't be assigned to ${nextNextNextToken.token}!`, token.line)
+                if(token.token == 'FLAG' && nextToken && nextToken.token == 'SYMBOL' && nextToken.value == '=' && nextNextToken){
+                    if(complexTypeToSimpleType(nextNextToken.token) != 'BOOLEAN'){
+                        return new Error('Can\'t assign flag to ' + nextNextToken.token + '!', token.line)
                     }
-
-                    tokens[l].splice(i, 4, { value: [token, nextToken, nextNextNextToken], token: 'ASSIGN', line: token.line });
+                    
+                    tokens[l].splice(i, 3, { value: [token, nextNextToken], token: 'ASSIGN', line: token.line });
                 }
             }
         }
@@ -2501,40 +2459,6 @@
                     }
                     
                     tokens[l].splice(i, 6, { value: [nextToken, nextNextNextToken], token: 'DEFINITION', line: token.line });
-                }
-            }
-        }
-
-        return tokens
-    }
-
-    function buildFlagAssignments(tokens){
-        for(let l = 0; l < tokens.length; l++){
-            //Go Deeper Into Blocks
-            for(let i = 0; i < tokens[l].length; i++){
-                if(tokens[l][i].token == 'BLOCK'){
-                    let deep = buildFlagAssignments(tokens[l][i].value);
-
-                    if(deep instanceof Error){
-                        return deep
-                    }
-
-                    tokens[l][i].value = deep;
-                }
-            }
-
-            //Build Flag Asignments
-            for(let i = 0; i < tokens[l].length; i++){
-                const token = tokens[l][i];
-                const nextToken = tokens[l][i + 1];
-                const nextNextToken = tokens[l][i + 2];
-
-                if(token.token == 'FLAG' && nextToken && nextToken.token == 'SYMBOL' && nextToken.value == '=' && nextNextToken){
-                    if(complexTypeToSimpleType(nextNextToken.token) != 'BOOLEAN'){
-                        return new Error('Can\'t assign flag to ' + nextNextToken.token + '!', token.line)
-                    }
-                    
-                    tokens[l].splice(i, 3, { value: [token, nextNextToken], token: 'ASSIGN', line: token.line });
                 }
             }
         }
@@ -2719,13 +2643,7 @@
             return tokens
         }
 
-        tokens = buildFlagAssignments(tokens);
-
-        if(tokens instanceof Error){
-            return tokens
-        }
-
-        tokens = buildAsignments(tokens);
+        tokens = buildAssignments(tokens);
 
         if(tokens instanceof Error){
             return tokens
@@ -2812,7 +2730,6 @@
     const keywords = [
         'if',
         'fif',
-        'dyn',
         'func',
         'delay',
         'else'

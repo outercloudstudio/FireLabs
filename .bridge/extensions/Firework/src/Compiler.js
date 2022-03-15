@@ -256,36 +256,6 @@ export function Compile(tree, config, source, scriptConfig){
     }
     //#endregion
 
-    //#region NOTE: Static Value Init - Index Dynamic Flags
-    let dynamicFlags = {}
-
-    function searchForDyncamicFlags(tree){
-        for(let i = 0; i < tree.length; i++){
-            if(tree[i].token == 'ASSIGN'){
-                if(tree[i].value[0].value == 'dyn' && tree[i].value[0].token == 'KEYWORD'){
-                    if(dynamicFlags[tree[i].value[1].value]){
-                        return new Backend.Error(`Dynamic flag '${tree[i].value[1].value}' already exists!`, tree[i].value[0].line)
-                    }
-
-                    if(tree[i].value[2].token != 'MOLANG'){
-                        return new Backend.Error(`Dynamic flag '${tree[i].value[1].value}' can only be assigned to molang! It was assigned to '${tree[i].value[2].token}'.`, tree[i].value[0].line)
-                    }
-
-                    dynamicFlags[tree[i].value[1].value] = tree[i].value[2].value
-                }
-            }
-        }
-    }
-
-    let deep = searchForDyncamicFlags(tree)
-
-    if(deep instanceof Backend.Error){
-        return deep
-    }
-
-    Native.setDynamicFlags(dynamicFlags)
-    //#endregion
-
     //#region NOTE: Dynamic Value Init - Index Flags
     let flags = {}
 
@@ -323,6 +293,7 @@ export function Compile(tree, config, source, scriptConfig){
                         if(deep instanceof Backend.Error){
                             return deep
                         }
+
                     }
                 }else if(tree[i].token == 'DEFINITION'){
                     let deep = searchForFlags(tree[i].value[1].value)
@@ -349,7 +320,7 @@ export function Compile(tree, config, source, scriptConfig){
                     if(deep instanceof Backend.Error){
                         return deep
                     }
-
+                    
                     deep = searchForFlags(tree[i].value[1].value)
 
                     if(deep instanceof Backend.Error){
@@ -386,13 +357,13 @@ export function Compile(tree, config, source, scriptConfig){
         }
     }
 
-    deep = searchForFlags(tree)
+    let deep = searchForFlags(tree)
 
     if(deep instanceof Backend.Error){
         return deep
     }
     //#endregion
-    
+
     //#region NOTE: Dynamic Value Init - Index Functions
     let functions = {}
 
@@ -635,19 +606,6 @@ export function Compile(tree, config, source, scriptConfig){
     if(deep instanceof Backend.Error){
         return deep
     }
-
-    const dynamicFlagNames = Object.keys(dynamicFlags)
-
-    for(const i in dynamicFlagNames){
-        const name = dynamicFlagNames[i]
-
-        if(!(name in dynamicValues)){
-            dynamicValues[name] = {
-                value: dynamicFlags[name],
-                token: 'MOLANG'
-            }
-        }
-    }
     //#endregion
 
     //#region NOTE: Compile Flags
@@ -690,7 +648,7 @@ export function Compile(tree, config, source, scriptConfig){
         }
     }
     //#endregion
-    
+
     //#region NOTE: Compile Code Blocks
     let delayChannelTicks = []
     
@@ -733,9 +691,6 @@ export function Compile(tree, config, source, scriptConfig){
                         commands.push(`event entity @s frw_${value[i].value[0].value}_false`)
                     }
                 }else{
-                    console.log('COMPLEX COMPILING FLAG')
-                    console.log(value[i].value[1])
-
                     let subBlock = [
                         {
                             token: 'DELAY',
