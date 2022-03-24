@@ -1024,7 +1024,5 @@ export function GenerateETree(tokens){
         return tokens
     }
 
-    console.log(tokens)
-
     return tokens
 }

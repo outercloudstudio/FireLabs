@@ -20,6 +20,8 @@ import * as Native from './Native.js'
 */
 
 export function Compile(tree, config, source, scriptConfig){
+    console.log(JSON.parse(JSON.stringify(tree)))
+
     //#region NOTE: Setup json values for editing
     let worldRuntime = source
 
@@ -553,11 +555,14 @@ export function Compile(tree, config, source, scriptConfig){
     let dynamicValues = {}
 
     function indexDynamicValues(name, expression){
+        if(expression.token == 'DYNAMIC VALUE') return expression
+        
         dynamicValues[name] = expression
 
         return {
             value: name,
-            token: 'DYNAMIC VALUE'
+            token: 'DYNAMIC VALUE',
+            line: expression.line
         }
     }
 
@@ -675,7 +680,74 @@ export function Compile(tree, config, source, scriptConfig){
                         return new Backend.Error(`Function ${name} does not exist with template!`, value[i].line)
                     }
 
+                    let funcIsStatic = true
+
+                    for(const param of params){
+                        if(!Native.isTypeStatic(param.token)){
+                            funcIsStatic = false
+                            break
+                        }
+                    }
+
+                    if(!funcIsStatic){
+                        console.log('GENERATING ALL POSSIBLE COMBINATIONS!')
+
+                        let combinations = []
+                        let newCombinations = []
+
+                        for(const param of params){
+                            let paramType = Native.complexTypeToSimpleType(param.token)
+
+                            let paramValues = []
+                            newCombinations = []
+                            
+                            if(Native.isComplexType(param.token)){
+                                switch(paramType){
+                                    case 'BOOLEAN':
+                                        paramValues = [
+                                            {
+                                                value: 'true',
+                                                token: 'BOOLEAN'
+                                            },
+                                            {
+                                                value: 'false',
+                                                token: 'BOOLEAN'
+                                            }
+                                        ]
+
+                                        break
+                                }
+                            }else{
+                                paramValues = [ param ]
+                            }
+
+                            console.log(paramValues)
+                            console.log(combinations)
+
+                            if(combinations.length == 0){
+                                for(const paramValue of paramValues){
+                                    newCombinations.push([ paramValue ])
+                                }
+                            }else{
+                                for(const paramValue of paramValues){
+                                    for(let combination of combinations){
+                                        combination.push(paramValue)
+
+                                        newCombinations.push(combination)
+                                    }
+                                }
+                            }
+
+                            combinations = newCombinations
+
+                            console.log(combinations)
+                            console.log('~~~~~~~~~~~~')
+                        }
+                    }
+
                     let entity = Native.getFunction(name, params)
+
+                    if(entity instanceof Backend.Error) return entity
 
                     for(let j = 0; j < entity.commands.length; j++){
                         commands.push(entity.commands[j])
@@ -897,14 +969,20 @@ export function Compile(tree, config, source, scriptConfig){
         worldRuntime['minecraft:entity'].description.animations[name + '_inverse'] = 'animation.firework.backend.' + name + '.inverse'
 
         let scriptData = {}
+
+        let deep = Native.variableToMolang(dynamicValues[name])
+
+        if(deep instanceof Backend.Error) return deep
         
-        scriptData[name] = Native.variableToMolang(dynamicValues[name]).value
+        scriptData[name] = deep.value
 
         worldRuntime['minecraft:entity'].description.scripts.animate.push(scriptData)
 
         scriptData = {}
 
-        scriptData[name + '_inverse'] = '!(' + Native.variableToMolang(dynamicValues[name]).value + ')'
+        deep = Native.variableToMolang(dynamicValues[name])
+
+        scriptData[name + '_inverse'] = '!(' + deep.value + ')'
 
         worldRuntime['minecraft:entity'].description.scripts.animate.push(scriptData)
     }

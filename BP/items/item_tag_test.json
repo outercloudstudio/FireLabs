@@ -8,8 +8,7 @@
 		"components": {
 			"minecraft:icon": {
 				"texture": "fl_item_tag_test"
-			},
-			"tag:minecraft:is_minecart": {}
+			}
 		}
 	}
 }

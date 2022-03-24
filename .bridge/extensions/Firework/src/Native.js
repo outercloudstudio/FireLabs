@@ -82,7 +82,11 @@ export const functions = {
                 ],
         
                 asMolang (params) {
-                    return `(math.random(0, 1) >= ${1 / variableToMolang(params[0]).value * 0.23})`
+                    let deep = variableToMolang(params[0])
+
+                    if(deep instanceof Backend.Error) return deep
+
+                    return `(math.random(0, 1) >= ${1 / deep.value * 0.23})`
                 },
 
                 dynamic: true
@@ -100,10 +104,17 @@ export const functions = {
         ],
 
         asEntity (params) {
+            let deep = variableToMolang(params[0])
+
+            if(deep instanceof Backend.Error) return deep
+
+            console.log('DOING PARAM FUNC')
+            console.log(params)
+
             return {
-                commands:[
-                    'kill @s'
-                ]
+                commands: deep.value == 'true' ? [
+                    `kill @s`
+                ] : []
             }
         },
 
@@ -166,7 +177,7 @@ export function doesTemplateMatch(params, template){
         if(params[i].token == 'CALL'){
             pTemplate.push(getReturnType(params[i].value[0].value, params[i].value.slice(1)))
         }else{
-            pTemplate.push(params[i].token)
+            pTemplate.push(complexTypeToSimpleType(params[i].token))
         }
     }
 
@@ -275,8 +286,18 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${variableToMolang(params[0]).value} + ${variableToMolang(params[1]).value}`
-        }
+            let deep = variableToMolang(params[0])
+
+            if(deep instanceof Backend.Error) return deep
+
+            let deep2 = variableToMolang(params[1])
+
+            if(deep2 instanceof Backend.Error) return deep2
+
+            return `${deep.value} + ${deep2.value}`
+        },
+
+        returns: 'INTEGER'
     },
 
     '-': {
@@ -294,8 +315,18 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${variableToMolang(params[0]).value} - ${variableToMolang(params[1]).value}`
-        }
+            let deep = variableToMolang(params[0])
+
+            if(deep instanceof Backend.Error) return deep
+
+            let deep2 = variableToMolang(params[1])
+
+            if(deep2 instanceof Backend.Error) return deep2
+
+            return `${deep.value} - ${deep2.value}`
+        },
+
+        returns: 'INTEGER'
     },
 
     '*': {
@@ -313,8 +344,18 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${variableToMolang(params[0]).value} * ${variableToMolang(params[1]).value}`
-        }
+            let deep = variableToMolang(params[0])
+
+            if(deep instanceof Backend.Error) return deep
+
+            let deep2 = variableToMolang(params[1])
+
+            if(deep2 instanceof Backend.Error) return deep2
+
+            return `${deep.value} * ${deep2.value}`
+        },
+
+        returns: 'INTEGER'
     },
 
     '/': {
@@ -332,8 +373,18 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${variableToMolang(params[0]).value} / ${variableToMolang(params[1]).value}`
-        }
+            let deep = variableToMolang(params[0])
+
+            if(deep instanceof Backend.Error) return deep
+
+            let deep2 = variableToMolang(params[1])
+
+            if(deep2 instanceof Backend.Error) return deep2
+
+            return `${deep.value} / ${deep2.value}`
+        },
+
+        returns: 'FLOAT'
     },
     
     '&&': {
@@ -351,8 +402,18 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${variableToMolang(params[0]).value} && ${variableToMolang(params[1]).value}`
-        }
+            let deep = variableToMolang(params[0])
+
+            if(deep instanceof Backend.Error) return deep
+
+            let deep2 = variableToMolang(params[1])
+
+            if(deep2 instanceof Backend.Error) return deep2
+
+            return `${deep.value} && ${deep2.value}`
+        },
+
+        returns: 'BOOLEAN'
     },
 
     '||': {
@@ -370,8 +431,18 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${variableToMolang(params[0]).value} || ${variableToMolang(params[1]).value}`
-        }
+            let deep = variableToMolang(params[0])
+
+            if(deep instanceof Backend.Error) return deep
+
+            let deep2 = variableToMolang(params[1])
+
+            if(deep2 instanceof Backend.Error) return deep2
+
+            return `${deep.value} || ${deep2.value}`
+        },
+
+        returns: 'BOOLEAN'
     },
 
     '==': {
@@ -397,8 +468,18 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${variableToMolang(params[0]).value} == ${variableToMolang(params[1]).value}`
-        }
+            let deep = variableToMolang(params[0])
+
+            if(deep instanceof Backend.Error) return deep
+
+            let deep2 = variableToMolang(params[1])
+
+            if(deep2 instanceof Backend.Error) return deep2
+
+            return `${deep.value} == ${deep2.value}`
+        },
+
+        returns: 'BOOLEAN'
     },
 
     '!=': {
@@ -424,8 +505,18 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${variableToMolang(params[0]).value} != ${variableToMolang(params[1]).value}`
-        }
+            let deep = variableToMolang(params[0])
+
+            if(deep instanceof Backend.Error) return deep
+
+            let deep2 = variableToMolang(params[1])
+
+            if(deep2 instanceof Backend.Error) return deep2
+
+            return `${deep.value} != ${deep2.value}`
+        },
+
+        returns: 'BOOLEAN'
     },
 
     '>': {
@@ -443,8 +534,18 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${variableToMolang(params[0]).value} > ${variableToMolang(params[1]).value}`
-        }
+            let deep = variableToMolang(params[0])
+
+            if(deep instanceof Backend.Error) return deep
+
+            let deep2 = variableToMolang(params[1])
+
+            if(deep2 instanceof Backend.Error) return deep2
+
+            return `${deep.value} > ${deep2.value}`
+        },
+
+        returns: 'BOOLEAN'
     },
 
     '<': {
@@ -462,8 +563,18 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${variableToMolang(params[0]).value} < ${variableToMolang(params[1]).value}`
-        }
+            let deep = variableToMolang(params[0])
+
+            if(deep instanceof Backend.Error) return deep
+
+            let deep2 = variableToMolang(params[1])
+
+            if(deep2 instanceof Backend.Error) return deep2
+
+            return `${deep.value} < ${deep2.value}`
+        },
+
+        returns: 'BOOLEAN'
     },
 
     '>=': {
@@ -481,8 +592,18 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${variableToMolang(params[0]).value} >= ${variableToMolang(params[1]).value}`
-        }
+            let deep = variableToMolang(params[0])
+
+            if(deep instanceof Backend.Error) return deep
+
+            let deep2 = variableToMolang(params[1])
+
+            if(deep2 instanceof Backend.Error) return deep2
+
+            return `${deep.value} >= ${deep2.value}`
+        },
+
+        returns: 'BOOLEAN'
     },
 
     '<=': {
@@ -500,8 +621,18 @@ export const operations = {
         },
 
         toMolang(params){
-            return `${variableToMolang(params[0]).value} <= ${variableToMolang(params[1]).value}`
-        }
+            let deep = variableToMolang(params[0])
+
+            if(deep instanceof Backend.Error) return deep
+
+            let deep2 = variableToMolang(params[1])
+
+            if(deep2 instanceof Backend.Error) return deep2
+
+            return `${deep.value} <= ${deep2.value}`
+        },
+
+        returns: 'BOOLEAN'
     },
 
     '!': {
@@ -518,8 +649,14 @@ export const operations = {
         },
 
         toMolang(params){
-            return `!${variableToMolang(params[0]).value}`
-        }
+            let deep = variableToMolang(params[0])
+
+            if(deep instanceof Backend.Error) return deep
+
+            return `!${deep.value}`
+        },
+
+        returns: 'BOOLEAN'
     },
 }
 
@@ -527,6 +664,10 @@ export const dynamicDataTypes = [
     'MOLANG',
     'FLAG'
 ]
+
+export function isTypeStatic(token){
+    return !dynamicDataTypes.includes(token) && token != 'EXPRESSION'
+}
 
 export function isOperationDynamic(operation){
     const params = operation.value.slice(1)
@@ -665,11 +806,7 @@ export function tokenToMolang(token){
         }
     }
 
-    return {
-        value: 'ERROR',
-        token: 'MOLANG',
-        line: token.line
-    }
+    return new Backend.Error(`Can't convert token ${token.token} to molang!`, token.line)
 }
 
 export function variableToMolang(token){
@@ -677,8 +814,12 @@ export function variableToMolang(token){
         const operation = token.value[0].value
         const params = token.value.slice(1)
 
+        let deep = operations[operation].toMolang(params)
+
+        if(deep instanceof Backend.Error) return deep
+
         token = {
-            value: '(' + operations[operation].toMolang(params) + ')',
+            value: '(' + deep + ')',
             token: 'MOLANG',
             line: token.line
         }        
@@ -686,20 +827,38 @@ export function variableToMolang(token){
         const cName = token.value[0].value
         const cParams = token.value.slice(1)
 
+        let deep = getFunction(cName, cParams)
+
+        if(deep instanceof Backend.Error) return deep
+
         token = {
-            value: '(' + getFunction(cName, cParams) + ')',
+            value: '(' + deep + ')',
             token: 'MOLANG',
             line: token.line
         }
     }else{
+        let deep = tokenToMolang(token)
+
+        if(deep instanceof Backend.Error){
+            return deep
+        }
+
         token = {
-            value: '(' + tokenToMolang(token).value + ')',
+            value: '(' + deep.value + ')',
             token: 'MOLANG',
             line: token.line
         }
     }
     
     return token
+}
+
+export function getOperationReturnType(operation){
+    return operations[operation].returns
+}
+
+export function isComplexType(type){
+    return type == 'MOLANG' || type == 'FLAG'
 }
 
 export function complexTypeToSimpleType(type){

@@ -106,7 +106,11 @@
                     ],
             
                     asMolang (params) {
-                        return `(math.random(0, 1) >= ${1 / variableToMolang(params[0]).value * 0.23})`
+                        let deep = variableToMolang(params[0]);
+
+                        if(deep instanceof Error) return deep
+
+                        return `(math.random(0, 1) >= ${1 / deep.value * 0.23})`
                     },
 
                     dynamic: true
@@ -124,10 +128,17 @@
             ],
 
             asEntity (params) {
+                let deep = variableToMolang(params[0]);
+
+                if(deep instanceof Error) return deep
+
+                console.log('DOING PARAM FUNC');
+                console.log(params);
+
                 return {
-                    commands:[
-                        'kill @s'
-                    ]
+                    commands: deep.value == 'true' ? [
+                        `kill @s`
+                    ] : []
                 }
             },
 
@@ -190,7 +201,7 @@
             if(params[i].token == 'CALL'){
                 pTemplate.push(getReturnType(params[i].value[0].value, params[i].value.slice(1)));
             }else {
-                pTemplate.push(params[i].token);
+                pTemplate.push(complexTypeToSimpleType(params[i].token));
             }
         }
 
@@ -299,8 +310,18 @@
             },
 
             toMolang(params){
-                return `${variableToMolang(params[0]).value} + ${variableToMolang(params[1]).value}`
-            }
+                let deep = variableToMolang(params[0]);
+
+                if(deep instanceof Error) return deep
+
+                let deep2 = variableToMolang(params[1]);
+
+                if(deep2 instanceof Error) return deep2
+
+                return `${deep.value} + ${deep2.value}`
+            },
+
+            returns: 'INTEGER'
         },
 
         '-': {
@@ -318,8 +339,18 @@
             },
 
             toMolang(params){
-                return `${variableToMolang(params[0]).value} - ${variableToMolang(params[1]).value}`
-            }
+                let deep = variableToMolang(params[0]);
+
+                if(deep instanceof Error) return deep
+
+                let deep2 = variableToMolang(params[1]);
+
+                if(deep2 instanceof Error) return deep2
+
+                return `${deep.value} - ${deep2.value}`
+            },
+
+            returns: 'INTEGER'
         },
 
         '*': {
@@ -337,8 +368,18 @@
             },
 
             toMolang(params){
-                return `${variableToMolang(params[0]).value} * ${variableToMolang(params[1]).value}`
-            }
+                let deep = variableToMolang(params[0]);
+
+                if(deep instanceof Error) return deep
+
+                let deep2 = variableToMolang(params[1]);
+
+                if(deep2 instanceof Error) return deep2
+
+                return `${deep.value} * ${deep2.value}`
+            },
+
+            returns: 'INTEGER'
         },
 
         '/': {
@@ -356,8 +397,18 @@
             },
 
             toMolang(params){
-                return `${variableToMolang(params[0]).value} / ${variableToMolang(params[1]).value}`
-            }
+                let deep = variableToMolang(params[0]);
+
+                if(deep instanceof Error) return deep
+
+                let deep2 = variableToMolang(params[1]);
+
+                if(deep2 instanceof Error) return deep2
+
+                return `${deep.value} / ${deep2.value}`
+            },
+
+            returns: 'FLOAT'
         },
         
         '&&': {
@@ -375,8 +426,18 @@
             },
 
             toMolang(params){
-                return `${variableToMolang(params[0]).value} && ${variableToMolang(params[1]).value}`
-            }
+                let deep = variableToMolang(params[0]);
+
+                if(deep instanceof Error) return deep
+
+                let deep2 = variableToMolang(params[1]);
+
+                if(deep2 instanceof Error) return deep2
+
+                return `${deep.value} && ${deep2.value}`
+            },
+
+            returns: 'BOOLEAN'
         },
 
         '||': {
@@ -394,8 +455,18 @@
             },
 
             toMolang(params){
-                return `${variableToMolang(params[0]).value} || ${variableToMolang(params[1]).value}`
-            }
+                let deep = variableToMolang(params[0]);
+
+                if(deep instanceof Error) return deep
+
+                let deep2 = variableToMolang(params[1]);
+
+                if(deep2 instanceof Error) return deep2
+
+                return `${deep.value} || ${deep2.value}`
+            },
+
+            returns: 'BOOLEAN'
         },
 
         '==': {
@@ -421,8 +492,18 @@
             },
 
             toMolang(params){
-                return `${variableToMolang(params[0]).value} == ${variableToMolang(params[1]).value}`
-            }
+                let deep = variableToMolang(params[0]);
+
+                if(deep instanceof Error) return deep
+
+                let deep2 = variableToMolang(params[1]);
+
+                if(deep2 instanceof Error) return deep2
+
+                return `${deep.value} == ${deep2.value}`
+            },
+
+            returns: 'BOOLEAN'
         },
 
         '!=': {
@@ -448,8 +529,18 @@
             },
 
             toMolang(params){
-                return `${variableToMolang(params[0]).value} != ${variableToMolang(params[1]).value}`
-            }
+                let deep = variableToMolang(params[0]);
+
+                if(deep instanceof Error) return deep
+
+                let deep2 = variableToMolang(params[1]);
+
+                if(deep2 instanceof Error) return deep2
+
+                return `${deep.value} != ${deep2.value}`
+            },
+
+            returns: 'BOOLEAN'
         },
 
         '>': {
@@ -467,8 +558,18 @@
             },
 
             toMolang(params){
-                return `${variableToMolang(params[0]).value} > ${variableToMolang(params[1]).value}`
-            }
+                let deep = variableToMolang(params[0]);
+
+                if(deep instanceof Error) return deep
+
+                let deep2 = variableToMolang(params[1]);
+
+                if(deep2 instanceof Error) return deep2
+
+                return `${deep.value} > ${deep2.value}`
+            },
+
+            returns: 'BOOLEAN'
         },
 
         '<': {
@@ -486,8 +587,18 @@
             },
 
             toMolang(params){
-                return `${variableToMolang(params[0]).value} < ${variableToMolang(params[1]).value}`
-            }
+                let deep = variableToMolang(params[0]);
+
+                if(deep instanceof Error) return deep
+
+                let deep2 = variableToMolang(params[1]);
+
+                if(deep2 instanceof Error) return deep2
+
+                return `${deep.value} < ${deep2.value}`
+            },
+
+            returns: 'BOOLEAN'
         },
 
         '>=': {
@@ -505,8 +616,18 @@
             },
 
             toMolang(params){
-                return `${variableToMolang(params[0]).value} >= ${variableToMolang(params[1]).value}`
-            }
+                let deep = variableToMolang(params[0]);
+
+                if(deep instanceof Error) return deep
+
+                let deep2 = variableToMolang(params[1]);
+
+                if(deep2 instanceof Error) return deep2
+
+                return `${deep.value} >= ${deep2.value}`
+            },
+
+            returns: 'BOOLEAN'
         },
 
         '<=': {
@@ -524,8 +645,18 @@
             },
 
             toMolang(params){
-                return `${variableToMolang(params[0]).value} <= ${variableToMolang(params[1]).value}`
-            }
+                let deep = variableToMolang(params[0]);
+
+                if(deep instanceof Error) return deep
+
+                let deep2 = variableToMolang(params[1]);
+
+                if(deep2 instanceof Error) return deep2
+
+                return `${deep.value} <= ${deep2.value}`
+            },
+
+            returns: 'BOOLEAN'
         },
 
         '!': {
@@ -542,8 +673,14 @@
             },
 
             toMolang(params){
-                return `!${variableToMolang(params[0]).value}`
-            }
+                let deep = variableToMolang(params[0]);
+
+                if(deep instanceof Error) return deep
+
+                return `!${deep.value}`
+            },
+
+            returns: 'BOOLEAN'
         },
     };
 
@@ -551,6 +688,10 @@
         'MOLANG',
         'FLAG'
     ];
+
+    function isTypeStatic(token){
+        return !dynamicDataTypes.includes(token) && token != 'EXPRESSION'
+    }
 
     function isOperationDynamic(operation){
         const params = operation.value.slice(1);
@@ -689,11 +830,7 @@
             }
         }
 
-        return {
-            value: 'ERROR',
-            token: 'MOLANG',
-            line: token.line
-        }
+        return new Error(`Can't convert token ${token.token} to molang!`, token.line)
     }
 
     function variableToMolang(token){
@@ -701,8 +838,12 @@
             const operation = token.value[0].value;
             const params = token.value.slice(1);
 
+            let deep = operations[operation].toMolang(params);
+
+            if(deep instanceof Error) return deep
+
             token = {
-                value: '(' + operations[operation].toMolang(params) + ')',
+                value: '(' + deep + ')',
                 token: 'MOLANG',
                 line: token.line
             };        
@@ -710,20 +851,34 @@
             const cName = token.value[0].value;
             const cParams = token.value.slice(1);
 
+            let deep = getFunction(cName, cParams);
+
+            if(deep instanceof Error) return deep
+
             token = {
-                value: '(' + getFunction(cName, cParams) + ')',
+                value: '(' + deep + ')',
                 token: 'MOLANG',
                 line: token.line
             };
         }else {
+            let deep = tokenToMolang(token);
+
+            if(deep instanceof Error){
+                return deep
+            }
+
             token = {
-                value: '(' + tokenToMolang(token).value + ')',
+                value: '(' + deep.value + ')',
                 token: 'MOLANG',
                 line: token.line
             };
         }
         
         return token
+    }
+
+    function isComplexType(type){
+        return type == 'MOLANG' || type == 'FLAG'
     }
 
     function complexTypeToSimpleType(type){
@@ -756,6 +911,8 @@
     */
 
     function Compile(tree, config, source, scriptConfig){
+        console.log(JSON.parse(JSON.stringify(tree)));
+
         //#region NOTE: Setup json values for editing
         let worldRuntime = source;
 
@@ -1037,8 +1194,6 @@
                         if(deep instanceof Error){
                             return deep
                         }
-
-                        console.log('DPOST');
                     }else if(tree[i].token == 'IF'){
                         let deep = searchForFlags(tree[i].value[0]);
 
@@ -1289,11 +1444,14 @@
         let dynamicValues = {};
 
         function indexDynamicValues(name, expression){
+            if(expression.token == 'DYNAMIC VALUE') return expression
+            
             dynamicValues[name] = expression;
 
             return {
                 value: name,
-                token: 'DYNAMIC VALUE'
+                token: 'DYNAMIC VALUE',
+                line: expression.line
             }
         }
 
@@ -1411,7 +1569,74 @@
                             return new Error(`Function ${name} does not exist with template!`, value[i].line)
                         }
 
+                        let funcIsStatic = true;
+
+                        for(const param of params){
+                            if(!isTypeStatic(param.token)){
+                                funcIsStatic = false;
+                                break
+                            }
+                        }
+
+                        if(!funcIsStatic){
+                            console.log('GENERATING ALL POSSIBLE COMBINATIONS!');
+
+                            let combinations = [];
+                            let newCombinations = [];
+
+                            for(const param of params){
+                                let paramType = complexTypeToSimpleType(param.token);
+
+                                let paramValues = [];
+                                newCombinations = [];
+                                
+                                if(isComplexType(param.token)){
+                                    switch(paramType){
+                                        case 'BOOLEAN':
+                                            paramValues = [
+                                                {
+                                                    value: 'true',
+                                                    token: 'BOOLEAN'
+                                                },
+                                                {
+                                                    value: 'false',
+                                                    token: 'BOOLEAN'
+                                                }
+                                            ];
+
+                                            break
+                                    }
+                                }else {
+                                    paramValues = [ param ];
+                                }
+
+                                console.log(paramValues);
+                                console.log(combinations);
+
+                                if(combinations.length == 0){
+                                    for(const paramValue of paramValues){
+                                        newCombinations.push([ paramValue ]);
+                                    }
+                                }else {
+                                    for(const paramValue of paramValues){
+                                        for(let combination of combinations){
+                                            combination.push(paramValue);
+
+                                            newCombinations.push(combination);
+                                        }
+                                    }
+                                }
+
+                                combinations = newCombinations;
+
+                                console.log(combinations);
+                                console.log('~~~~~~~~~~~~');
+                            }
+                        }
+
                         let entity = getFunction(name, params);
+
+                        if(entity instanceof Error) return entity
 
                         for(let j = 0; j < entity.commands.length; j++){
                             commands.push(entity.commands[j]);
@@ -1427,9 +1652,6 @@
                             commands.push(`event entity @s frw_${value[i].value[0].value}_false`);
                         }
                     }else {
-                        console.log('COMPLEX COMPILING FLAG');
-                        console.log(value[i].value[1]);
-
                         let subBlock = [
                             {
                                 token: 'DELAY',
@@ -1636,14 +1858,20 @@
             worldRuntime['minecraft:entity'].description.animations[name + '_inverse'] = 'animation.firework.backend.' + name + '.inverse';
 
             let scriptData = {};
+
+            let deep = variableToMolang(dynamicValues[name]);
+
+            if(deep instanceof Error) return deep
             
-            scriptData[name] = variableToMolang(dynamicValues[name]).value;
+            scriptData[name] = deep.value;
 
             worldRuntime['minecraft:entity'].description.scripts.animate.push(scriptData);
 
             scriptData = {};
 
-            scriptData[name + '_inverse'] = '!(' + variableToMolang(dynamicValues[name]).value + ')';
+            deep = variableToMolang(dynamicValues[name]);
+
+            scriptData[name + '_inverse'] = '!(' + deep.value + ')';
 
             worldRuntime['minecraft:entity'].description.scripts.animate.push(scriptData);
         }
@@ -2678,8 +2906,6 @@
             return tokens
         }
 
-        console.log(tokens);
-
         return tokens
     }
 
@@ -2746,7 +2972,7 @@
             let found = false;
             let foundAt = -1;
 
-            for(let i = input.length + 1; i >= readStart; i--) {
+            for(let i = Math.min(input.length, readStart + 30) + 1; i >= readStart; i--) {
                 const sub = input.substring(readStart, i);
 
                 if(isInteger(sub)){
