@@ -122,28 +122,21 @@
             returns: 'BOOLEAN'
         },
         
-        par: {
+        /*par: {
             params: [
                 'BOOLEAN'
             ],
 
             asEntity (params) {
-                let deep = variableToMolang(params[0]);
-
-                if(deep instanceof Error) return deep
-
-                console.log('DOING PARAM FUNC');
-                console.log(params);
-
                 return {
-                    commands: deep.value == 'true' ? [
+                    commands: params[0].value == 'true' ? [
                         `kill @s`
                     ] : []
                 }
             },
 
             supports: 'entity'
-        }
+        }*/
     };
 
     function doesFunctionExist(name){
@@ -1579,8 +1572,6 @@
                         }
 
                         if(!funcIsStatic){
-                            console.log('GENERATING ALL POSSIBLE COMBINATIONS!');
-
                             let combinations = [];
                             let newCombinations = [];
 
@@ -1610,9 +1601,6 @@
                                     paramValues = [ param ];
                                 }
 
-                                console.log(paramValues);
-                                console.log(combinations);
-
                                 if(combinations.length == 0){
                                     for(const paramValue of paramValues){
                                         newCombinations.push([ paramValue ]);
@@ -1629,17 +1617,98 @@
 
                                 combinations = newCombinations;
 
-                                console.log(combinations);
-                                console.log('~~~~~~~~~~~~');
+                                const subID = uuidv4();
+
+                                let subBlock = {
+                                    token: 'BLOCK',
+                                    value: [
+                                        {
+                                            token: 'DELAY',
+                                            value: [
+                                                {
+                                                    token: 'INTEGER',
+                                                    value: '2'
+                                                },
+                                                {
+                                                    token: 'BLOCK',
+                                                    value: []
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                };
+
+                                for(const combination of combinations){
+                                    let molang = '';
+
+                                    for(const param in combination){
+                                        let deep1 = variableToMolang(params[param]);
+
+                                        if(deep1 instanceof Error) return deep1
+
+                                        let deep2 = variableToMolang(combination[param]);
+                                        
+                                        if(deep2 instanceof Error) return deep2
+
+                                        molang += `(${deep1.value} == ${deep2.value}) && `;
+                                    }
+
+                                    molang = molang.substring(0, molang.length - 4);
+
+                                    let subBlockValue = {
+                                        token: 'FIF',
+                                        value: [
+                                            indexDynamicValues(uuidv4(), { value: molang, token: 'MOLANG' }),
+                                            {
+                                                token: 'BLOCK',
+                                                value: []
+                                            }
+                                        ]
+                                    };
+
+                                    let entity = getFunction(name, combination);
+
+                                    if(entity instanceof Error) return entity
+
+                                    console.log(entity.commands);
+
+                                    for(let j = 0; j < entity.commands.length; j++){
+                                        subBlockValue.value[1].value.push({
+                                            token: 'CALL',
+                                            value: [
+                                                {
+                                                    value: 'rc',
+                                                    token: 'NAME'
+                                                },
+                                                {
+                                                    token: 'STRING',
+                                                    value: entity.commands[j]
+                                                }
+                                            ]
+                                        });
+                                    }
+
+                                    subBlock.value[0].value[1].value.push(subBlockValue);
+                                }
+
+                                subBlock.value[0].value[1].value = subBlock.value[0].value[1].value.concat(value.slice(i + 1));
+                                value.splice(i + 1, value.length - i - 1);
+
+                                console.log('SUB BLOCK:');
+                                console.log(subBlock);
+
+                                compileCodeBlock('param_' + subID, subBlock.value);
+
+                                commands.push(`event entity @s frw_param_${subID}`);
                             }
-                        }
+                        }else {
+                            let entity = getFunction(name, params);
 
-                        let entity = getFunction(name, params);
+                            if(entity instanceof Error) return entity
 
-                        if(entity instanceof Error) return entity
-
-                        for(let j = 0; j < entity.commands.length; j++){
-                            commands.push(entity.commands[j]);
+                            for(let j = 0; j < entity.commands.length; j++){
+                                commands.push(entity.commands[j]);
+                            }
                         }
                     } else {
                         commands.push(`event entity @s frw_${name}`);

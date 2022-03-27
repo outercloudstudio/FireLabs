@@ -98,28 +98,21 @@ export const functions = {
         returns: 'BOOLEAN'
     },
     
-    par: {
+    /*par: {
         params: [
             'BOOLEAN'
         ],
 
         asEntity (params) {
-            let deep = variableToMolang(params[0])
-
-            if(deep instanceof Backend.Error) return deep
-
-            console.log('DOING PARAM FUNC')
-            console.log(params)
-
             return {
-                commands: deep.value == 'true' ? [
+                commands: params[0].value == 'true' ? [
                     `kill @s`
                 ] : []
             }
         },
 
         supports: 'entity'
-    }
+    }*/
 }
 
 export function doesFunctionExist(name){

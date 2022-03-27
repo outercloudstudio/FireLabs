@@ -1,4 +1,4 @@
-func start => {
+func check => {
     par(?"q.position(1) > 64")
     say("done")
-}
+} 
