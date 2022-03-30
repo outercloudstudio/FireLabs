@@ -1,3 +1,4 @@
+#!NO COMPILE
 func trunc => {
     say("trunc")
 

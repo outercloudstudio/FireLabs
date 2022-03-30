@@ -1,3 +1,4 @@
+#!NO COMPILE
 func place => {
     fif($metalic) => {
         fif($rare) => {

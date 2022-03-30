@@ -1174,6 +1174,14 @@
                                 return new Error(`Flag '${tree[i].value[0].value}' can only be assigned to a boolean value! It was assigned to '${tree[i].value[1].token}'.`, tree[i].line)
                             }
 
+                            if(tree[i].value[1].token == 'EXPRESSION'){
+                                let deep = searchForFlags(tree[i].value[1]);
+
+                                if(deep instanceof Error){
+                                    return deep
+                                }
+                            }
+
                             let deep = indexFlag(tree[i].value[0].value);
 
                             if(deep instanceof Error){
@@ -1249,6 +1257,125 @@
             return deep
         }
         //#endregion
+
+        //#region NOTE: Dynamic Value Init - Index Vars
+            let variables = {};
+
+            function indexVar(name){
+                variables[name] = {};
+            }
+        
+            function searchForVariables(tree){
+                if(tree.token == 'EXPRESSION'){
+                    for(let i = 0; i < tree.value.length; i++){
+                        if(tree.value[i].token == 'EXPRESSION'){
+                            let deep = searchForVariables(tree.value[i]);
+        
+                            if(deep instanceof Error){
+                                return deep
+                            }
+                        }else if(tree.value[i].token == 'VAR'){
+                            let deep = indexVar(tree.value[i].value);
+        
+                            if(deep instanceof Error){
+                                return deep
+                            }
+                        }
+                    }
+                }else {
+                    for(let i = 0; i < tree.length; i++){
+                        if(tree[i].token == 'ASSIGN'){
+                            if(tree[i].value[0].token == 'VAR'){
+                                if(complexTypeToSimpleType(tree[i].value[1].token) != 'INTEGER'){
+                                    return new Error(`Variable '${tree[i].value[0].value}' can only be assigned to an integer value! It was assigned to '${tree[i].value[1].token}'.`, tree[i].line)
+                                }
+
+                                if(tree[i].value[1].token == 'EXPRESSION'){
+                                    let deep = searchForVariables(tree[i].value[1]);
+        
+                                    if(deep instanceof Error){
+                                        return deep
+                                    }
+                                }
+        
+                                let deep = indexVar(tree[i].value[0].value);
+        
+                                if(deep instanceof Error){
+                                    return deep
+                                }
+        
+                            }
+                        }else if(tree[i].token == 'DEFINITION'){
+                            let deep = searchForVariables(tree[i].value[1].value);
+        
+                            if(deep instanceof Error){
+                                return deep
+                            }
+                        }else if(tree[i].token == 'IF'){
+                            let deep = searchForVariables(tree[i].value[0]);
+        
+                            if(deep instanceof Error){
+                                return deep
+                            }
+        
+                            deep = searchForVariables(tree[i].value[1].value);
+        
+                            if(deep instanceof Error){
+                                return deep
+                            }
+                        }
+                        else if(tree[i].token == 'FIF'){
+                            let deep = searchForVariables(tree[i].value[0]);
+        
+                            if(deep instanceof Error){
+                                return deep
+                            }
+                            
+                            deep = searchForVariables(tree[i].value[1].value);
+        
+                            if(deep instanceof Error){
+                                return deep
+                            }
+                        }else if(tree[i].token == 'ELSE'){
+                            let deep = searchForVariables(tree[i].value[0]);
+        
+                            if(deep instanceof Error){
+                                return deep
+                            }
+                        }else if(tree[i].token == 'DELAY'){
+                            let deep = searchForVariables(tree[i].value[1].value);
+        
+                            if(deep instanceof Error){
+                                return deep
+                            }
+                        }else if(tree[i].token == 'CALL'){
+                            let params = tree[i].value.slice(1);
+        
+                            for(let j = 0; j < params.length; j++){
+                                if(params[j].token == 'VAR'){
+                                    indexVar(params[j].value);
+                                }else if(params[j].token == 'EXPRESSION'){
+                                    let deep = searchForVariables(params[j]);
+        
+                                    if(deep instanceof Error){
+                                        return deep
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        
+            deep = searchForVariables(tree);
+        
+            if(deep instanceof Error){
+                return deep
+            }
+
+            console.log('GOT VARS:');
+            console.log(variables);
+            //#endregion
 
         //#region NOTE: Dynamic Value Init - Index Functions
         let functions = {};
@@ -1330,16 +1457,14 @@
         function searchForExpressions(tree){
             for(let i = 0; i < tree.length; i++){
                 if(tree[i].token == 'ASSIGN'){
-                    if(tree[i].value[0].value == 'dyn' && tree[i].value[1].token == 'KEYWORD');else {
-                        if(tree[i].value[1].token == 'EXPRESSION'){
-                            let deep = optimizeExpression(tree[i].value[1]);
+                    if(tree[i].value[1].token == 'EXPRESSION'){
+                        let deep = optimizeExpression(tree[i].value[1]);
 
-                            if(deep instanceof Error){
-                                return deep
-                            }
-
-                            tree[i].value[1] = deep;
+                        if(deep instanceof Error){
+                            return deep
                         }
+
+                        tree[i].value[1] = deep;
                     }
                 }else if(tree[i].token == 'DEFINITION'){
                     let deep = searchForExpressions(tree[i].value[1].value);
@@ -1536,6 +1661,47 @@
         }
         //#endregion
 
+        //#region NOTE: Compile Vars
+        const varNames = Object.keys(variables);
+
+        for(const i in varNames){
+            varNames[i];
+
+            /*let eventData = {
+                set_actor_property: {},
+                run_command: {
+                    command: [
+                        `tag @s add frw_${name}`
+                    ]
+                }
+            }
+        
+            eventData.set_actor_property['frw:' + name] = 1
+
+            worldRuntime['minecraft:entity'].events['frw_' + name + '_true'] = eventData
+
+            eventData = {
+                set_actor_property: {},
+                run_command: {
+                    command: [
+                        `tag @s remove frw_${name}`
+                    ]
+                }
+            }
+        
+            eventData.set_actor_property['frw:' + name] = 0
+
+            worldRuntime['minecraft:entity'].events['frw_' + name + '_false'] = eventData
+
+            worldRuntime['minecraft:entity'].description.properties['frw:' + name] = {
+                values: [
+                    0,
+                    1
+                ]
+            }*/
+        }
+        //#endregion
+        
         //#region NOTE: Compile Code Blocks
         let delayChannelTicks = [];
         
@@ -2178,6 +2344,26 @@
                 }
             }
 
+            //Build Vars
+            for(let i = 0; i < tokens[l].length; i++){
+                const token = tokens[l][i];
+                const prevToken = tokens[l][i - 1];
+
+                if(token.token == 'NAME' && prevToken && prevToken.token == 'SYMBOL' && prevToken.value == '#'){
+                    tokens[l].splice(i - 1, 2, { value: token.value, token: 'VAR', line: token.line });
+
+                    i--;
+                }
+            }
+
+            for(let i = 0; i < tokens[l].length; i++){
+                const token = tokens[l][i];
+
+                if(token.token == 'SYMBOL' && token.value == '#'){
+                    return new Error('Unexpected symbol \'#\'!', token.line)
+                }
+            }
+
             //Build Molang
             for(let i = 0; i < tokens[l].length; i++){
                 const token = tokens[l][i];
@@ -2320,7 +2506,7 @@
                 let prevToken = tokens[i - 1];
 
                 if(prevToken && nextToken){
-                    if(!(nextToken.token == 'INTEGER' || nextToken.token == 'EXPRESSION' || nextToken.token == 'CALL') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'CALL')){
+                    if(!(nextToken.token == 'INTEGER' || nextToken.token == 'EXPRESSION' || nextToken.token == 'CALL' || nextToken.token == 'VAR') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'CALL' || prevToken.token == 'VAR')){
                         return new Error(`Can not do operation '${token.value}' with '${nextToken.token}' and '${prevToken.token}'!`, token.line)
                     }
 
@@ -2340,7 +2526,7 @@
                 let prevToken = tokens[i - 1];
 
                 if(prevToken && nextToken){
-                    if(!(nextToken.token == 'INTEGER' || nextToken.token == 'EXPRESSION' || nextToken.token == 'CALL') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'CALL')){
+                    if(!(nextToken.token == 'INTEGER' || nextToken.token == 'EXPRESSION' || nextToken.token == 'CALL' || nextToken.token == 'VAR') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'CALL' || prevToken.token == 'VAR')){
                         return new Error(`Can not do operation '${token.value}' with '${nextToken.token}' and '${prevToken.token}'!`, token.line)
                     }
                     
@@ -2382,7 +2568,7 @@
                         let nextNextToken = tokens[i + 2];
 
                         if(token.value == '>' || token.value == '<'){
-                            if(!(nextNextToken.token == 'INTEGER' || nextNextToken.token == 'EXPRESSION' || nextNextToken.token == 'NAME' || nextNextToken.token == 'CALL') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'NAME' || prevToken.token == 'CALL')){
+                            if(!(nextNextToken.token == 'INTEGER' || nextNextToken.token == 'EXPRESSION' || nextNextToken.token == 'NAME' || nextNextToken.token == 'CALL' || nextNextToken.token == 'VAR') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'NAME' || prevToken.token == 'CALL' || prevToken.token == 'VAR')){
                                 return new Error(`Can not do operation '${token.value + nextToken.value}' with '${nextNextToken.token}' and '${prevToken.token}'!`, token.line)
                             }
                             
@@ -2392,7 +2578,7 @@
 
                             i--;
                         }else {
-                            if(!(nextNextToken.token == 'INTEGER' || nextNextToken.token == 'EXPRESSION' || nextNextToken.token == 'BOOLEAN' || nextNextToken.token == 'FLAG' || nextNextToken.token == 'MOLANG' || nextNextToken.token == 'NAME'  || nextNextToken.token == 'CALL') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'BOOLEAN' || prevToken.token == 'FLAG' || prevToken.token == 'MOLANG' || prevToken.token == 'NAME' || prevToken.token == 'CALL')){
+                            if(!(nextNextToken.token == 'INTEGER' || nextNextToken.token == 'EXPRESSION' || nextNextToken.token == 'BOOLEAN' || nextNextToken.token == 'FLAG' || nextNextToken.token == 'MOLANG' || nextNextToken.token == 'NAME'  || nextNextToken.token == 'CALL' || nextNextToken.token == 'VAR') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'BOOLEAN' || prevToken.token == 'FLAG' || prevToken.token == 'MOLANG' || prevToken.token == 'NAME' || prevToken.token == 'CALL' || prevToken.token == 'VAR')){
                                 return new Error(`Can not do operation '${token.value + nextToken.value}' with '${nextNextToken.token}' and '${prevToken.token}'!`, token.line)
                             }
 
@@ -2403,7 +2589,7 @@
                             i--;
                         }
                     }else if(token.value == '>' || token.value == '<'){
-                        if(!(nextToken.token == 'INTEGER' || nextToken.token == 'EXPRESSION' || nextNextToken.token == 'NAME' || nextNextToken.token == 'CALL') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'NAME' || prevToken.token == 'CALL')){
+                        if(!(nextToken.token == 'INTEGER' || nextToken.token == 'EXPRESSION' || nextNextToken.token == 'NAME' || nextNextToken.token == 'CALL' || nextNextToken.token == 'VAR') || !(prevToken.token == 'INTEGER' || prevToken.token == 'EXPRESSION' || prevToken.token == 'NAME' || prevToken.token == 'CALL' || prevToken.token == 'VAR')){
                             return new Error(`Can not do operation '${token.value}' with '${nextToken.token}' and '${prevToken.token}'!`, token.line)
                         }
 
@@ -2636,6 +2822,21 @@
                     tokens[l].splice(i, 3, { value: [token, nextNextToken], token: 'ASSIGN', line: token.line });
                 }
             }
+            
+            //Build Variable Asignments
+            for(let i = 0; i < tokens[l].length; i++){
+                const token = tokens[l][i];
+                const nextToken = tokens[l][i + 1];
+                const nextNextToken = tokens[l][i + 2];
+
+                if(token.token == 'VAR' && nextToken && nextToken.token == 'SYMBOL' && nextToken.value == '=' && nextNextToken){
+                    if(complexTypeToSimpleType(nextNextToken.token) != 'INTEGER'){
+                        return new Error('Can\'t assign variable to ' + nextNextToken.token + '!', token.line)
+                    }
+                    
+                    tokens[l].splice(i, 3, { value: [token, nextNextToken], token: 'ASSIGN', line: token.line });
+                }
+            }
         }
 
         return tokens
@@ -2772,6 +2973,7 @@
         STRING
         BLOCK
         FLAG
+        VAR
         MOLANG
         ARROW
         CALL
@@ -2807,6 +3009,8 @@
                     if(gloabalScope){
                         if(tokens[l].value[0].token == 'FLAG'){
                             return new Error('Can\'t assign flags in the global scope!', tokens[l].line)
+                        }else if(tokens[l].value[0].token == 'VAR'){
+                            return new Error('Can\'t assign variables in the global scope!', tokens[l].line)
                         }
                     }
                     break
@@ -2883,6 +3087,8 @@
                     return new Error('Strings may not exist by themselves!', tokens[l].line)
                 case 'FLAG':
                     return new Error('Flags may not exist by themselves!', tokens[l].line)
+                case 'VAR':
+                    return new Error('Variables may not exist by themselves!', tokens[l].line)
                 case 'MOLANG':
                     return new Error('Molangs may not exist by themselves!', tokens[l].line)
                 case 'ARROW':
@@ -2975,6 +3181,8 @@
             return tokens
         }
 
+        console.log(JSON.parse(JSON.stringify(tokens)));
+
         return tokens
     }
 
@@ -3019,7 +3227,8 @@
         '"',
         '{',
         '}',
-        "'"
+        "'",
+        '#'
     ];
 
     const keywords = [
@@ -3260,6 +3469,10 @@
     							if(scriptPaths[script.substring(0, script.length - 4)]){
     								let scriptContent = scripts[script.substring(0, script.length - 4)];
 
+    								if(scriptContent.startsWith('#!NO COMPILE')) continue
+
+    								console.log(filePath + ' : ' + script);
+
     								const tokens = Tokenize(scriptContent);
 
     								const tree = GenerateETree(tokens);
@@ -3267,8 +3480,6 @@
     								if(tree instanceof Error){
     									throw tree.message + ' on line ' + tree.line + ' in ' + script
     								}
-
-    								console.log(filePath + ' : ' + script);
 
     								let config = {
     									delayChannels: 3  
@@ -3330,6 +3541,8 @@
     					values: ['firework_runtime']
     				}));
     			}
+
+    			console.log('\n\n\n\n\nCOMPILER STAGE 2\n\n\n\n\n');
 
     			await compileFiles(entitiesToCompile);
 

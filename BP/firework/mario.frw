@@ -1,3 +1,4 @@
+#!NO COMPILE
 func fall => {
     if($inair && !$jumping) => {
         rc("tp ~ ~-0.5 ~")

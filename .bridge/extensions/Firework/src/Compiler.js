@@ -290,6 +290,14 @@ export function Compile(tree, config, source, scriptConfig){
                             return new Backend.Error(`Flag '${tree[i].value[0].value}' can only be assigned to a boolean value! It was assigned to '${tree[i].value[1].token}'.`, tree[i].line)
                         }
 
+                        if(tree[i].value[1].token == 'EXPRESSION'){
+                            let deep = searchForFlags(tree[i].value[1])
+
+                            if(deep instanceof Backend.Error){
+                                return deep
+                            }
+                        }
+
                         let deep = indexFlag(tree[i].value[0].value)
 
                         if(deep instanceof Backend.Error){
@@ -365,6 +373,125 @@ export function Compile(tree, config, source, scriptConfig){
         return deep
     }
     //#endregion
+
+    //#region NOTE: Dynamic Value Init - Index Vars
+        let variables = {}
+
+        function indexVar(name){
+            variables[name] = {}
+        }
+    
+        function searchForVariables(tree){
+            if(tree.token == 'EXPRESSION'){
+                for(let i = 0; i < tree.value.length; i++){
+                    if(tree.value[i].token == 'EXPRESSION'){
+                        let deep = searchForVariables(tree.value[i])
+    
+                        if(deep instanceof Backend.Error){
+                            return deep
+                        }
+                    }else if(tree.value[i].token == 'VAR'){
+                        let deep = indexVar(tree.value[i].value)
+    
+                        if(deep instanceof Backend.Error){
+                            return deep
+                        }
+                    }
+                }
+            }else{
+                for(let i = 0; i < tree.length; i++){
+                    if(tree[i].token == 'ASSIGN'){
+                        if(tree[i].value[0].token == 'VAR'){
+                            if(Native.complexTypeToSimpleType(tree[i].value[1].token) != 'INTEGER'){
+                                return new Backend.Error(`Variable '${tree[i].value[0].value}' can only be assigned to an integer value! It was assigned to '${tree[i].value[1].token}'.`, tree[i].line)
+                            }
+
+                            if(tree[i].value[1].token == 'EXPRESSION'){
+                                let deep = searchForVariables(tree[i].value[1])
+    
+                                if(deep instanceof Backend.Error){
+                                    return deep
+                                }
+                            }
+    
+                            let deep = indexVar(tree[i].value[0].value)
+    
+                            if(deep instanceof Backend.Error){
+                                return deep
+                            }
+    
+                        }
+                    }else if(tree[i].token == 'DEFINITION'){
+                        let deep = searchForVariables(tree[i].value[1].value)
+    
+                        if(deep instanceof Backend.Error){
+                            return deep
+                        }
+                    }else if(tree[i].token == 'IF'){
+                        let deep = searchForVariables(tree[i].value[0])
+    
+                        if(deep instanceof Backend.Error){
+                            return deep
+                        }
+    
+                        deep = searchForVariables(tree[i].value[1].value)
+    
+                        if(deep instanceof Backend.Error){
+                            return deep
+                        }
+                    }
+                    else if(tree[i].token == 'FIF'){
+                        let deep = searchForVariables(tree[i].value[0])
+    
+                        if(deep instanceof Backend.Error){
+                            return deep
+                        }
+                        
+                        deep = searchForVariables(tree[i].value[1].value)
+    
+                        if(deep instanceof Backend.Error){
+                            return deep
+                        }
+                    }else if(tree[i].token == 'ELSE'){
+                        let deep = searchForVariables(tree[i].value[0])
+    
+                        if(deep instanceof Backend.Error){
+                            return deep
+                        }
+                    }else if(tree[i].token == 'DELAY'){
+                        let deep = searchForVariables(tree[i].value[1].value)
+    
+                        if(deep instanceof Backend.Error){
+                            return deep
+                        }
+                    }else if(tree[i].token == 'CALL'){
+                        let params = tree[i].value.slice(1)
+    
+                        for(let j = 0; j < params.length; j++){
+                            if(params[j].token == 'VAR'){
+                                indexVar(params[j].value)
+                            }else if(params[j].token == 'EXPRESSION'){
+                                let deep = searchForVariables(params[j])
+    
+                                if(deep instanceof Backend.Error){
+                                    return deep
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    
+        deep = searchForVariables(tree)
+    
+        if(deep instanceof Backend.Error){
+            return deep
+        }
+
+        console.log('GOT VARS:')
+        console.log(variables)
+        //#endregion
 
     //#region NOTE: Dynamic Value Init - Index Functions
     let functions = {}
@@ -446,18 +573,14 @@ export function Compile(tree, config, source, scriptConfig){
     function searchForExpressions(tree){
         for(let i = 0; i < tree.length; i++){
             if(tree[i].token == 'ASSIGN'){
-                if(tree[i].value[0].value == 'dyn' && tree[i].value[1].token == 'KEYWORD'){
-                    
-                }else{
-                    if(tree[i].value[1].token == 'EXPRESSION'){
-                        let deep = optimizeExpression(tree[i].value[1])
+                if(tree[i].value[1].token == 'EXPRESSION'){
+                    let deep = optimizeExpression(tree[i].value[1])
 
-                        if(deep instanceof Backend.Error){
-                            return deep
-                        }
-
-                        tree[i].value[1] = deep
+                    if(deep instanceof Backend.Error){
+                        return deep
                     }
+
+                    tree[i].value[1] = deep
                 }
             }else if(tree[i].token == 'DEFINITION'){
                 let deep = searchForExpressions(tree[i].value[1].value)
@@ -654,6 +777,47 @@ export function Compile(tree, config, source, scriptConfig){
     }
     //#endregion
 
+    //#region NOTE: Compile Vars
+    const varNames = Object.keys(variables)
+
+    for(const i in varNames){
+        const name = varNames[i]
+
+        /*let eventData = {
+            set_actor_property: {},
+            run_command: {
+                command: [
+                    `tag @s add frw_${name}`
+                ]
+            }
+        }
+    
+        eventData.set_actor_property['frw:' + name] = 1
+
+        worldRuntime['minecraft:entity'].events['frw_' + name + '_true'] = eventData
+
+        eventData = {
+            set_actor_property: {},
+            run_command: {
+                command: [
+                    `tag @s remove frw_${name}`
+                ]
+            }
+        }
+    
+        eventData.set_actor_property['frw:' + name] = 0
+
+        worldRuntime['minecraft:entity'].events['frw_' + name + '_false'] = eventData
+
+        worldRuntime['minecraft:entity'].description.properties['frw:' + name] = {
+            values: [
+                0,
+                1
+            ]
+        }*/
+    }
+    //#endregion
+    
     //#region NOTE: Compile Code Blocks
     let delayChannelTicks = []
     

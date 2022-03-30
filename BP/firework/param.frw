@@ -1,4 +1,3 @@
 func check => {
-    par(?"q.position(1) > 64")
-    say("done")
+    #var = 2
 } 
