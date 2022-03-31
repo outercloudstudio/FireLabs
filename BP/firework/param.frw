@@ -1,3 +1,33 @@
-func check => {
-    #var = 2
-} 
+func start => {
+    #var = 0
+}
+
+func update => {
+    fif(#var == 0) => {
+        say("0")
+    }
+
+    fif(#var == 1) => {
+        say("1")
+    }
+
+    fif(#var == 2) => {
+        say("2")
+    }
+
+    fif(#var == 3) => {
+        say("3")
+    }
+
+    fif(#var == 4) => {
+        say("4")
+    }
+
+    fif(#var == 5) => {
+        say("5")
+
+        #var = -1
+    }
+
+    #var = #var + 1
+}

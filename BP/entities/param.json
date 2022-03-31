@@ -5,27 +5,7 @@
 			"identifier": "fl:param",
 			"is_spawnable": true,
 			"is_summonable": true,
-			"is_experimental": false,
-			"properties": {
-				"fl:int": {
-					"client_sync": true,
-					"values": {
-						"max": 100,
-						"min": -100
-					},
-					"default": 0
-				}
-			},
-			"animations": {
-				"test": "animation.test"
-			},
-			"scripts": {
-				"animate": [
-					{
-						"test": "query.actor_property('fl:int') == 0"
-					}
-				]
-			}
+			"is_experimental": false
 		},
 		"component_groups": {
 			"despawn": {
@@ -41,11 +21,6 @@
 					"component_groups": [
 						"despawn"
 					]
-				}
-			},
-			"increment": {
-				"set_actor_property": {
-					"fl:int": "query.actor_property('fl:int') + 1"
 				}
 			}
 		}

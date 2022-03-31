@@ -679,7 +679,8 @@
 
     const dynamicDataTypes = [
         'MOLANG',
-        'FLAG'
+        'FLAG',
+        'VAR'
     ];
 
     function isTypeStatic(token){
@@ -821,6 +822,12 @@
                 token: 'MOLANG',
                 line: token.line
             }
+        }else if(token.token == 'VAR'){
+            return {
+                value: `q.actor_property('frw:${token.value}')`,
+                token: 'MOLANG',
+                line: token.line
+            }
         }
 
         return new Error(`Can't convert token ${token.token} to molang!`, token.line)
@@ -870,16 +877,22 @@
         return token
     }
 
-    function isComplexType(type){
-        return type == 'MOLANG' || type == 'FLAG'
+    function getOperationReturnType(operation){
+        return operations[operation].returns
     }
 
-    function complexTypeToSimpleType(type){
+    function isComplexType(type){
+        return dynamicDataTypes.includes(type)
+    }
+
+    function complexTypeToSimpleType(type, token){
         switch(type){
             case 'MOLANG':
                 return 'BOOLEAN'
             case 'FLAG':
                 return 'BOOLEAN'
+            case 'EXPRESSION':
+                return getOperationReturnType(token.value[0].value)
             default:
                 return type
         }
@@ -1170,7 +1183,7 @@
                 for(let i = 0; i < tree.length; i++){
                     if(tree[i].token == 'ASSIGN'){
                         if(tree[i].value[0].token == 'FLAG'){
-                            if(complexTypeToSimpleType(tree[i].value[1].token) != 'BOOLEAN'){
+                            if(complexTypeToSimpleType(tree[i].value[1].token, tree[i].value[1]) != 'BOOLEAN'){
                                 return new Error(`Flag '${tree[i].value[0].value}' can only be assigned to a boolean value! It was assigned to '${tree[i].value[1].token}'.`, tree[i].line)
                             }
 
@@ -1286,7 +1299,7 @@
                     for(let i = 0; i < tree.length; i++){
                         if(tree[i].token == 'ASSIGN'){
                             if(tree[i].value[0].token == 'VAR'){
-                                if(complexTypeToSimpleType(tree[i].value[1].token) != 'INTEGER'){
+                                if(complexTypeToSimpleType(tree[i].value[1].token, tree[i].value[1]) != 'INTEGER'){
                                     return new Error(`Variable '${tree[i].value[0].value}' can only be assigned to an integer value! It was assigned to '${tree[i].value[1].token}'.`, tree[i].line)
                                 }
 
@@ -1665,40 +1678,44 @@
         const varNames = Object.keys(variables);
 
         for(const i in varNames){
-            varNames[i];
+            const name = varNames[i];
 
-            /*let eventData = {
+            let eventData = {
                 set_actor_property: {},
-                run_command: {
-                    command: [
-                        `tag @s add frw_${name}`
-                    ]
-                }
-            }
+            };
         
-            eventData.set_actor_property['frw:' + name] = 1
+            eventData.set_actor_property['frw:' + name] = 0;
 
-            worldRuntime['minecraft:entity'].events['frw_' + name + '_true'] = eventData
-
-            eventData = {
-                set_actor_property: {},
-                run_command: {
-                    command: [
-                        `tag @s remove frw_${name}`
-                    ]
-                }
-            }
-        
-            eventData.set_actor_property['frw:' + name] = 0
-
-            worldRuntime['minecraft:entity'].events['frw_' + name + '_false'] = eventData
+            worldRuntime['minecraft:entity'].events['frw_' + name + '_reset'] = eventData;
 
             worldRuntime['minecraft:entity'].description.properties['frw:' + name] = {
-                values: [
-                    0,
-                    1
-                ]
-            }*/
+                client_sync: true,
+
+                values: {
+                    max: 1024,
+                    min: -1024
+                },
+
+                default: 0
+            };
+
+            //inecrement
+            eventData = {
+                set_actor_property: {},
+            };
+        
+            eventData.set_actor_property['frw:' + name] = `q.actor_property('frw:${name}') + 1`;
+
+            worldRuntime['minecraft:entity'].events['frw_' + name + '_increment'] = eventData;
+
+            //decrement
+            eventData = {
+                set_actor_property: {},
+            };
+        
+            eventData.set_actor_property['frw:' + name] = `q.actor_property('frw:${name}') - 1`;
+
+            worldRuntime['minecraft:entity'].events['frw_' + name + '_decrement'] = eventData;
         }
         //#endregion
         
@@ -1742,7 +1759,7 @@
                             let newCombinations = [];
 
                             for(const param of params){
-                                let paramType = complexTypeToSimpleType(param.token);
+                                let paramType = complexTypeToSimpleType(param.token, param);
 
                                 let paramValues = [];
                                 newCombinations = [];
@@ -1762,6 +1779,19 @@
                                             ];
 
                                             break
+                                        case 'INTEGER':
+                                            paramValues = [];
+
+                                            for(let i = -1024; i <= 1024; i++){
+                                                paramValues.push({
+                                                    value: i.toString(),
+                                                    token: 'INTEGER'
+                                                });
+                                            }
+
+                                            break
+                                        default:
+                                            return new Error(`Unsupported complex type ${paramType} in a function paramater!`, value[i].line)
                                     }
                                 }else {
                                     paramValues = [ param ];
@@ -1880,85 +1910,103 @@
                         commands.push(`event entity @s frw_${name}`);
                     }
                 }else if(value[i].token == 'ASSIGN'){
-                    if(value[i].value[1].token == 'BOOLEAN'){
-                        if(value[i].value[1].value == 'true'){
-                            commands.push(`event entity @s frw_${value[i].value[0].value}_true`);
+                    if(value[i].value[0].token == 'FLAG'){
+                        if(value[i].value[1].token == 'BOOLEAN'){
+                            if(value[i].value[1].value == 'true'){
+                                commands.push(`event entity @s frw_${value[i].value[0].value}_true`);
+                            }else {
+                                commands.push(`event entity @s frw_${value[i].value[0].value}_false`);
+                            }
                         }else {
-                            commands.push(`event entity @s frw_${value[i].value[0].value}_false`);
+                            let subBlock = [
+                                {
+                                    token: 'DELAY',
+                                    value: [
+                                        {
+                                            token: 'INTEGER',
+                                            value: '2'
+                                        },
+                                        {
+                                            token: 'BLOCK',
+                                            value: [
+                                                {
+                                                    token: 'IF',
+                                                    value: [
+                                                        indexDynamicValues(uuidv4(), value[i].value[1]),
+                                                        {
+                                                            token: 'BLOCK',
+                                                            value: [
+                                                                {
+                                                                    token: 'ASSIGN',
+                                                                    value: [
+                                                                        {
+                                                                            token: 'FLAG',
+                                                                            value: value[i].value[0].value
+                                                                        },
+                                                                        {
+                                                                            token: 'BOOLEAN',
+                                                                            value: 'true'
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    token: 'ELSE',
+                                                    value: [
+                                                        {
+                                                            token: 'BLOCK',
+                                                            value: [
+                                                                {
+                                                                    token: 'ASSIGN',
+                                                                    value: [
+                                                                        {
+                                                                            token: 'FLAG',
+                                                                            value: value[i].value[0].value
+                                                                        },
+                                                                        {
+                                                                            token: 'BOOLEAN',
+                                                                            value: 'false'
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ];
+
+                            subBlock[0].value[1].value = subBlock[0].value[1].value.concat(value.slice(i + 1));
+                            value.splice(i + 1, value.length - i - 1);
+
+                            const subID = uuidv4();
+
+                            commands.push(`event entity @s frw_${subID}`);
+
+                            compileCodeBlock(subID, subBlock);
                         }
                     }else {
-                        let subBlock = [
-                            {
-                                token: 'DELAY',
-                                value: [
-                                    {
-                                        token: 'INTEGER',
-                                        value: '5'
-                                    },
-                                    {
-                                        token: 'BLOCK',
-                                        value: [
-                                            {
-                                                token: 'IF',
-                                                value: [
-                                                    indexDynamicValues(uuidv4(), value[i].value[1]),
-                                                    {
-                                                        token: 'BLOCK',
-                                                        value: [
-                                                            {
-                                                                token: 'ASSIGN',
-                                                                value: [
-                                                                    {
-                                                                        token: 'FLAG',
-                                                                        value: value[i].value[0].value
-                                                                    },
-                                                                    {
-                                                                        token: 'BOOLEAN',
-                                                                        value: 'true'
-                                                                    }
-                                                                ]
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                token: 'ELSE',
-                                                value: [
-                                                    {
-                                                        token: 'BLOCK',
-                                                        value: [
-                                                            {
-                                                                token: 'ASSIGN',
-                                                                value: [
-                                                                    {
-                                                                        token: 'FLAG',
-                                                                        value: value[i].value[0].value
-                                                                    },
-                                                                    {
-                                                                        token: 'BOOLEAN',
-                                                                        value: 'false'
-                                                                    }
-                                                                ]
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        ];
+                        const opID = uuidv4();
 
-                        subBlock[0].value[1].value = subBlock[0].value[1].value.concat(value.slice(i + 1));
-                        value.splice(i + 1, value.length - i - 1);
+                        let operData = {
+                            set_actor_property: {},
+                        };
 
-                        const subID = uuidv4();
+                        let deep = variableToMolang(value[i].value[1]);
 
-                        commands.push(`event entity @s frw_${subID}`);
+                        if(deep instanceof Error) return deep
+                    
+                        operData.set_actor_property['frw:' + value[i].value[0].value] = deep.value;
+                
+                        worldRuntime['minecraft:entity'].events['frw_' + value[i].value[0].value + '_' + opID] = operData;
 
-                        compileCodeBlock(subID, subBlock);
+                        commands.push(`event entity @s frw_${value[i].value[0].value}_${opID}`);
                     }
                 }else if(value[i].token == 'IF'){
                     const valueID = value[i].value[0].value;
@@ -2815,7 +2863,7 @@
                 const nextNextToken = tokens[l][i + 2];
 
                 if(token.token == 'FLAG' && nextToken && nextToken.token == 'SYMBOL' && nextToken.value == '=' && nextNextToken){
-                    if(complexTypeToSimpleType(nextNextToken.token) != 'BOOLEAN'){
+                    if(complexTypeToSimpleType(nextNextToken.token, nextNextToken) != 'BOOLEAN'){
                         return new Error('Can\'t assign flag to ' + nextNextToken.token + '!', token.line)
                     }
                     
@@ -2830,7 +2878,7 @@
                 const nextNextToken = tokens[l][i + 2];
 
                 if(token.token == 'VAR' && nextToken && nextToken.token == 'SYMBOL' && nextToken.value == '=' && nextNextToken){
-                    if(complexTypeToSimpleType(nextNextToken.token) != 'INTEGER'){
+                    if(complexTypeToSimpleType(nextNextToken.token, nextNextToken) != 'INTEGER'){
                         return new Error('Can\'t assign variable to ' + nextNextToken.token + '!', token.line)
                     }
                     

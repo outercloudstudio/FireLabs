@@ -698,7 +698,7 @@ function buildAssignments(tokens){
             const nextNextToken = tokens[l][i + 2]
 
             if(token.token == 'FLAG' && nextToken && nextToken.token == 'SYMBOL' && nextToken.value == '=' && nextNextToken){
-                if(Native.complexTypeToSimpleType(nextNextToken.token) != 'BOOLEAN'){
+                if(Native.complexTypeToSimpleType(nextNextToken.token, nextNextToken) != 'BOOLEAN'){
                     return new Backend.Error('Can\'t assign flag to ' + nextNextToken.token + '!', token.line)
                 }
                 
@@ -713,7 +713,7 @@ function buildAssignments(tokens){
             const nextNextToken = tokens[l][i + 2]
 
             if(token.token == 'VAR' && nextToken && nextToken.token == 'SYMBOL' && nextToken.value == '=' && nextNextToken){
-                if(Native.complexTypeToSimpleType(nextNextToken.token) != 'INTEGER'){
+                if(Native.complexTypeToSimpleType(nextNextToken.token, nextNextToken) != 'INTEGER'){
                     return new Backend.Error('Can\'t assign variable to ' + nextNextToken.token + '!', token.line)
                 }
                 
